@@ -1,0 +1,109 @@
+{% extends 'index.html.twig' %}
+
+{% block title %}Account
+{% endblock %}
+
+{% block body %}
+<style>
+    table{
+        border-collapse: collapse;
+        border:0px solid  #0055b9;        
+    }
+    table td{
+        padding: 0 8px 0 0;
+    }
+    table td a button{
+        width: 80px;
+        height: 44px;
+        padding: 4px;
+        margin: 0px;
+    }
+</style>
+
+    <section class="section">
+        {% if is_jwt_valid is defined %}
+            <div style="padding:15px 0;">
+            {#    <h2>Hello: {{is_jwt_valid.username}}</h2>        #}
+                {% if businessSubscription is not empty %}
+                    <strong>Business package:</strong>
+                    {% for key, value in pills %}
+                        {% if key == businessSubscription.subscription %}
+                            <strong>{{ value }}</strong>
+                        {% else %}
+                        {{ value }} /
+                        {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    <strong>No business package selected</strong>
+                {% endif %}
+                <br>                
+            </div>
+
+            <div>
+                
+                {% if accounts is not empty %}
+                    <p><strong>Registrated domains</strong></p>
+                    {% for account in accounts %}
+                        <div style="border:1px solid gray;padding:30px 30px">                    
+                            <div style=" 
+                             overflow-wrap: break-word;  
+                             word-break: break-word;      
+                             white-space: normal;">   
+                                <strong>Domain: </strong>{{ account.domain }}
+                                <hr>
+                                <strong>Callback user login: </strong>{{ account.callbackUserLogin|nl2br }}
+                                <hr>
+                                <strong>Callback user registration: </strong>{{ account.callbackUserRegistration|nl2br }}
+                                <hr>
+                                <strong>corporateIdKey: </strong>{{ account.corporateIdKey|nl2br }}
+                                <hr>
+                                <strong>corporateIdSecret: </strong>{{ account.corporateIdSecret|nl2br }}
+                                <hr>
+                                <strong>iv: </strong>{{ account.iv }}
+                                <hr>
+                                <strong>corporateId: </strong>{{ account.corporateId|nl2br }}
+                                <hr>
+                                <strong>sslPublicKey: </strong>{{ account.sslPublicKey|nl2br }}
+                                                                                                                                                                                           
+                            </div> 
+
+                            <hr>
+
+                            <table>
+                                <tr>
+                                    <td>
+                                        <a href="/instance-registration-follow-up">
+                                            <button>
+                                                <svg xmlns="http://www.w3.org/2000/svg" style="width:24px;" width="24" height="24" viewBox="0 0 24 24" fill="#fff">
+                                                    <path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zm18.71-10.04c.39-.39.39-1.02 0-1.41l-2.5-2.5a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.99-1.67z"/>
+                                                </svg>
+                                            </button
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="">
+                                            <button>
+                                                <svg xmlns="http://www.w3.org/2000/svg" style="width:24px;" width="24" height="24" viewBox="0 0 24 24" fill="red">
+                                                    <path d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5c-.1.83-.79 1.5-1.62 1.5H8.12c-.83 0-1.52-.67-1.62-1.5L5 9zm5 2v8h2v-8H10zm4 0v8h2v-8h-2zM9 4h6v2H9V4z"/>
+                                                </svg>
+                                            </button
+                                        </a>
+                                    </td>                   
+                                </tr>
+                            </table>
+                        </div>                     
+                    {% endfor %}
+                {% endif %}
+            </div><br>
+                {% if businessSubscription is not empty %}
+                    <a href="/instance-registration-external">New domain registration</a>
+                {% endif %}
+            </div> 
+        {% else %}
+        
+        <h2>You are not logged in, or invalid jwt token</h2>
+    {% endif %}
+
+    </section>
+    {{dump(accounts)}}
+{% endblock %}

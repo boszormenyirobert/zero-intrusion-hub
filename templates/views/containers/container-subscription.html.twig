@@ -1,0 +1,12 @@
+{% extends 'index.html.twig' %}
+
+{% block title %}Device as Identity with QR
+{% endblock %}
+
+{% block body %}
+
+	{{ include('views/registration/subscription.html.twig', 
+	_context|merge({'title': 'Business Unit Basic Registration Request'}))}}
+	{{ include('partials/description.html.twig') }}
+
+{% endblock %}

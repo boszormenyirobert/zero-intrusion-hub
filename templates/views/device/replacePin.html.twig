@@ -1,0 +1,35 @@
+{% extends 'device.html.twig' %}
+
+{% block title %}Device as Identity with QR
+{% endblock %}
+
+{% block body %}
+
+	<section class="section">
+		<h2>
+			🔐 End-to-End Security – No Compromise
+		</h2>
+		<div class="content-box">
+			<div class="form-placeholder">
+				
+        {% if qrCodeData is empty%}
+			{{ form_start(replace_device_pin, {
+					action: path('replace_device_pin', {replaceHash: replaceHash}),
+					method: 'POST'
+					}) }}
+			
+			{{ form_row(replace_device_pin._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request My Identity</button>
+			{{ form_end(replace_device_pin) }}
+		{% endif %}
+
+
+		{% if qrCodeData is not empty%}
+			{{include('views/device/replaceQr.html.twig', _context)}}
+		{% endif %}
+			</div>
+		</div>
+	</section>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+<style>
+	.left,
+	.right {
+		display: inline-block;
+		width: 180px;
+		vertical-align: top;
+	}
+</style>
+
+
+<div id="identity_requester" class="form-placeholder">
+	
+		<p>
+			To subscribe to our services, please click the "Request My Identity" button.
+			      The unique identity credentials you receive are
+			<strong>confidential—keep them safe and do not share them with anyone.</strong>
+		</p>
+		<p>
+			Once you request your credentials, the service subscription process will move into a 
+			      pending state until you provide the required URLs.
+		</p>
+
+		{{ form_start(form_identity_requester, {
+			action:  path(path),
+			method: 'POST',
+			attr: { 'data-turbo': 'false' }
+		}) }}
+
+		{{ form_row(form_identity_requester._token) }}
+		{# ensures CSRF token is included #}
+		<button type="submit">Request My Identity</button>
+
+		{{ form_end(form_identity_requester) }}
+	
+</div>

@@ -1,0 +1,31 @@
+<section class="section">
+	<h2>
+		📦 {{title}}
+	</h2>
+	{% if service_auth_data is empty %}
+		<div class="content-box">
+			{{include('views/registration/forms/subscription.html.twig', 
+		_context)}}
+		</div>
+	{% endif %}
+	{% if service_auth_data is not empty %}
+		<section class="section">
+			<div class="content-box">			
+				<p>
+					The unique identity credentials you receive are
+					<strong>confidential—keep them safe and do not share them with anyone.</strong>
+				</p>
+				{% for key, value in service_auth_data %}
+					<div class="row">
+						<div class="left">
+							<strong>{{ key }}:</strong>
+						</div>
+						<div class="right">{{ value }}</div>
+						<hr>
+					</div>
+				{% endfor %}
+			</div>
+			<a href="{{ url('instance_registration_follow_up') }}"><button type="submit">Registration confirmation</button></a>
+		</section>
+	{% endif %}	
+</section>

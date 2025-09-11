@@ -1,0 +1,232 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f4f4;
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #0055b9;
+  color: #fff;
+  padding: 20px 10px;
+  text-align: center;
+		svg {
+			width: 35px;
+			height: auto;
+		}
+		.top-right-buttons {
+			position: fixed;
+			top: 10px;
+			right: 20px;
+			display: flex;
+			gap: 0px;
+		}
+		.top-right-buttons a {
+			padding: 4px 10px;
+      margin-right: 5px;
+			text-decoration: none;
+			color: white;
+			background-color: #0055b9;
+			border-radius: 4px;
+			font-weight: normal;
+			transition: background-color 0.3s ease;
+		}
+		.top-right-buttons a:hover {
+			background-color: #003d80;
+		}		  
+}
+
+
+section {
+  padding:
+    40px 20px;
+  max-width: 1000px;
+  margin: auto;
+  background-color: #fff;
+  margin-bottom:
+    30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+h1,
+h2,
+h3 {
+  color: #0055b9;
+}
+
+.form-placeholder {
+  padding: 20px;
+  background:
+    #eaf0f9;
+  border: 2px dashed #0055b9;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+pre {
+  background: #eaeaea;
+  padding: 1em;
+  overflow-x:
+    auto;
+  border-radius: 4px;
+}
+
+.section {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 15px 16px 30px 16px;  
+}
+
+.section h2 {
+  width: 100%;
+  margin-bottom:
+    24px;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.section-content-row {
+  display:
+    flex;
+  flex-direction: row;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.content-box {
+  flex-basis: 65%;
+  background: #f5f5f5;
+  padding: 24px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content:
+    center;
+}
+
+.image-box {
+  flex-basis: 35%;
+  background: #e0e0e0;
+  border-radius:
+    8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow:
+    hidden;
+  min-height: 200px;
+}
+
+.content-box--mod {
+  flex-basis: 35%;
+  background:
+    #f5f5f5;
+  padding: 24px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  display:
+    flex;
+  flex-direction: column;
+}
+
+.image-box img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+label {
+  display: block;
+  margin-bottom:
+    0.5rem;
+  margin-top: 1rem;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding:
+    0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  width: auto; 
+  margin-top: 0.5rem;
+  width: 200px;
+  background: #0055b9;
+  color: white;
+  border: none;
+  padding: 0.7rem;  
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background:
+    #00449a;
+}
+
+@media (max-width: 900px) {
+  .section-content-row {
+    flex-direction:
+      column;
+    gap: 16px;
+  }
+
+  .content-box,
+  .image-box {
+    flex-basis: 100%;
+    width:
+      100%;
+  }
+}
+
+.menu {
+  background-color: #0055b9;
+  /* overflow: hidden; */
+  border-top: 1px solid #fff;
+}
+
+nav {
+  background: #0055b9;
+  font-family: sans-serif;
+}
+nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+nav ul li {
+  position: relative;
+}
+nav ul li a,
+nav ul li > span {
+  display: block;
+  padding: 15px 20px;
+  color: white;
+  text-decoration: none;
+}
+nav ul li:hover > ul {
+  display: block;
+}
+nav ul ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #0070e0;
+}
+nav ul ul li a {
+  padding: 10px 20px;
+  white-space: nowrap;
+}
+
+nav ul li:hover{
+    background: #044da0;
+}

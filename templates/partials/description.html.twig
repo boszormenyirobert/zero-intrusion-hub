@@ -1,0 +1,178 @@
+<section class="section">
+	<div class="content-box">
+		<h2>Generating the Zero Intrusion Lock & Layered Encryption QR Code (Backend)</h2>
+
+		<p>
+			The QR code should encode a secure payload in JSON format that includes:
+		</p>
+
+		<ul>
+			<li>
+				<strong>CORPORATE_ID</strong>: Encrypted corporate identifier using Sodium</li>
+			<li>
+				<strong>REGISTRATION_HASH</strong>: A plain unique hash for this session</li>
+			<li>
+				<strong>PAYLOAD</strong>: A securely encrypted custom payload (e.g. metadata, user info)</li>
+		</ul>
+
+		<p>
+			Note: Polling the backend is not strictly required, since our Zero Intrusion Lock & Layered Encryption service notifies your backend upon successful QR scan.
+		</p>
+
+		<h3>QR Code Content Example (JSON structure)</h3>
+
+		<pre><code>{
+  "CORPORATE_ID": "[encrypted_value]",
+  "REGISTRATION_HASH": "abc123xyz",
+  "PAYLOAD": "[secure_encrypted_payload]"
+}
+</code></pre>
+
+		<hr>
+
+
+		<div class="section-content-row">
+			<div class="content-box">
+				<details>
+					<summary>
+						📌 1. PHP Example (using Sodium and Endroid QRCode)
+					</summary>
+					<pre>
+                      <code>use Endroid\QrCode\Builder\Builder;
+
+                      $data = [
+                          'CORPORATE_ID' => $this-&gt;encrypt(CORPORATE_ID_KEY, CORPORATE_ID_SECRET),
+                          'REGISTRATION_HASH' => $registrationHash,
+                          'PAYLOAD' => $this-&gt;encrypt(json_encode([
+                              'INFO' =&gt; 'Any additional info with key-value can be added on a secure way'
+                          ]), DATA_HASH_SECRET)
+                      ];
+
+                      $qrContent = json_encode($data);
+
+                      $result = Builder::create()
+                          -&gt;data($qrContent)
+                          -&gt;size(300)
+                          -&gt;build();
+
+                      $qrCodeBase64 = base64_encode($result-&gt;getString());
+
+                      // Helper encryption function
+                      private function encrypt(string $data, string $password): string
+                      {
+                          $key = sodium_crypto_generichash($password, '', SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+                          $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                          $cipher = sodium_crypto_secretbox($data, $nonce, $key);
+                          return base64_encode($nonce . $cipher);
+                      }
+                      </code>
+                  </pre>
+				</details>
+				<details>
+					<summary>
+						📌 2. Node.js Example (using `qrcode` and `libsodium-wrappers`)
+					</summary>
+
+					<pre>
+                    <code>const QRCode = require('qrcode');
+                    const sodium = require('libsodium-wrappers');
+
+                    (async () =&gt; {
+                      await sodium.ready;
+
+                      function encrypt(data, password) {
+                        const key = sodium.crypto_generichash(password, null, sodium.crypto_secretbox_KEYBYTES);
+                        const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+                        const cipher = sodium.crypto_secretbox_easy(data, nonce, key);
+                        return Buffer.concat([nonce, cipher]).toString('base64');
+                      }
+
+                      const qrPayload = {
+                        CORPORATE_ID: encrypt("CORPORATE_ID_KEY", "CORPORATE_ID_SECRET"),
+                        REGISTRATION_HASH: "abc123xyz",
+                        PAYLOAD: encrypt(JSON.stringify({ INFO: "Secure data" }), "DATA_HASH_SECRET")
+                      };
+
+                      const qrContent = JSON.stringify(qrPayload);
+
+                      const base64Image = await QRCode.toDataURL(qrContent);
+                      console.log(base64Image); // Use this as &lt;img src="..."&gt;
+                    })();
+                    </code>
+                </pre>
+				</details>
+				<details>
+					<summary>
+						📌 3. Python Example (using `pynacl` and `qrcode`)
+					</summary>
+					<pre><code>import base64
+                    import os
+                    import qrcode
+                    import json
+                    from nacl import secret, utils, hash
+
+                    def encrypt(data: str, password: str) -&gt; str:
+                        key = hash.blake2b(password.encode(), digest_size=32)
+                        nonce = utils.random(secret.SecretBox.NONCE_SIZE)
+                        box = secret.SecretBox(key)
+                        cipher = box.encrypt(data.encode(), nonce)
+                        return base64.b64encode(cipher).decode()
+
+                    payload = {
+                        "CORPORATE_ID": encrypt("CORPORATE_ID_KEY", "CORPORATE_ID_SECRET"),
+                        "REGISTRATION_HASH": "abc123xyz",
+                        "PAYLOAD": encrypt('{ "INFO": "Secure info" }', "DATA_HASH_SECRET")
+                    }
+
+                    qr_content = json.dumps(payload)
+
+                    img = qrcode.make(qr_content)
+                    img.save("qr_code.png")
+                    </code>
+                </pre>
+				</details>
+				<hr>
+
+				<h3>Final Display (HTML in Template)</h3>
+
+				<pre><code>&lt;img style="width:150px;height:150px"
+              src="data:image/png;base64,/{/{ qrCodeData /}/}"
+              alt="QR Registration Code"&gt;
+
+          &lt;div id="status" class="status"&gt;&lt;/div&gt;
+
+          &lt;script&gt;
+              let process = '';
+              let checkAttempts = 0;
+              const maxAttempts = 30;  // Max number of checks before giving up
+
+              const checkStatus = setInterval(() =&gt; {
+                  fetch("https://Zero Intrusion Lock & Layered Encryption.tegernseer-web.de/registration/state//{/{ registrationHash /}/}")
+                      .then(res =&gt; res.json())
+                      .then(data =&gt; {
+                          if (data['registration_process_check'] === true) {
+                              clearInterval(checkStatus);
+                              document.getElementById('status').textContent = "Done!";
+                              window.location.href = '/login';
+                          } else {
+                              checkAttempts++;
+                              process = '.'.repeat(checkAttempts % 4);  // Cycle through 0–3 dots
+                              document.getElementById('status').textContent = `Processing${process}`;
+
+                              if (checkAttempts &gt;= maxAttempts) {
+                                  clearInterval(checkStatus);
+                                  document.getElementById('status').textContent = "Timed out. Please try again.";
+                              }
+                          }
+                      })
+                      .catch(error =&gt; {
+                          console.error('Error fetching registration status:', error);
+                          clearInterval(checkStatus);
+                          document.getElementById('status').textContent = "Error occurred. Please try again.";
+                      });
+              }, 3000);
+          &lt;/script&gt;
+          </code></pre>
+			</div>
+		</div>
+	</section>

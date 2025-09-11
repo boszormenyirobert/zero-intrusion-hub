@@ -1,0 +1,90 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    EASYLOGIN_DOMAIN: '%env(EASYLOGIN_DOMAIN)%'
+    EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%env(EASYLOGIN_SERVICE_REGISTRATION_PARTNER)%'
+    EASYLOGIN_SERVICE_IDENTITY: '%env(EASYLOGIN_SERVICE_IDENTITY)%'
+    EASYLOGIN_SERVICE_REGISTRATION: '%env(EASYLOGIN_SERVICE_REGISTRATION)%'
+    EASYLOGIN_SERVICE_REGISTRATION_NEW: '%env(EASYLOGIN_SERVICE_REGISTRATION_NEW)%'
+
+    EASYLOGIN_SERVICE_SECRETMANAGER: '%env(EASYLOGIN_SERVICE_SECRETMANAGER)%'
+    EASYLOGIN_SERVICE_SECRETMANAGER_NEW: '%env(EASYLOGIN_SERVICE_SECRETMANAGER_NEW)%'
+    EASYLOGIN_SERVICE_SECRETMANAGER_RECOVER_SETTINGS: '%env(EASYLOGIN_SERVICE_SECRETMANAGER_RECOVER_SETTINGS)%'
+
+    EASYLOGIN_SERVICE_DEVICE: '%env(EASYLOGIN_SERVICE_DEVICE)%'
+    EASYLOGIN_SERVICE_DEVICE_REPLACE: '%env(EASYLOGIN_SERVICE_DEVICE_REPLACE)%'
+    EASYLOGIN_SERVICE_DEVICE_REPLACE_PIN: '%env(EASYLOGIN_SERVICE_DEVICE_REPLACE_PIN)%'
+
+    SERVICE_API_KEY: '%env(SERVICE_API_KEY)%'
+    SERVICE_API_SECRET: '%env(SERVICE_API_SECRET)%'
+    DATA_HASH_SECRET: '%env(DATA_HASH_SECRET)%'
+
+    ZERO_INTRUSION_DOMAIN: '%env(ZERO_INTRUSION_DOMAIN)%'
+    ZERO_INTRUSION_SHARED_BASE: '%env(ZERO_INTRUSION_SHARED_BASE)%'
+    ZERO_INTRUSION_DOMAIN_READ_BASE: '%env(ZERO_INTRUSION_DOMAIN_READ_BASE)%'
+    ZERO_INTRUSION_DOMAIN_DELETE_BASE: '%env(ZERO_INTRUSION_DOMAIN_DELETE_BASE)%'
+    ZERO_INTRUSION_VAULT_READ_BASE: '%env(ZERO_INTRUSION_VAULT_READ_BASE)%'
+    ZERO_INTRUSION_VAULT_EDIT_BASE: '%env(ZERO_INTRUSION_VAULT_EDIT_BASE)%'
+    ZERO_INTRUSION_VAULT_DELETE_BASE: '%env(ZERO_INTRUSION_VAULT_DELETE_BASE)%'
+    ZERO_INTRUSION_SYSTEM_HUB_BASE: '%env(ZERO_INTRUSION_SYSTEM_HUB_BASE)%'
+    ZERO_INTRUSION_ACCOUNT: '%env(ZERO_INTRUSION_ACCOUNT)%'
+    ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION: '%env(ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION)%'
+
+services:
+    Symfony\Contracts\HttpClient\HttpClientInterface: '@http_client'
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\EventListener\JWTCreatedListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+    App\Service\Corporate\SubscriptionService:
+        arguments:
+            session: '@session.session'
+            EASYLOGIN_DOMAIN: '%EASYLOGIN_DOMAIN%'
+            EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%EASYLOGIN_SERVICE_REGISTRATION_PARTNER%'
+            EASYLOGIN_SERVICE_IDENTITY: '%EASYLOGIN_SERVICE_IDENTITY%'
+            EASYLOGIN_SERVICE_REGISTRATION: '%EASYLOGIN_SERVICE_REGISTRATION%'
+            EASYLOGIN_SERVICE_REGISTRATION_NEW: '%EASYLOGIN_SERVICE_REGISTRATION_NEW%'
+
+            EASYLOGIN_SERVICE_SECRETMANAGER: '%EASYLOGIN_SERVICE_SECRETMANAGER%'
+            EASYLOGIN_SERVICE_SECRETMANAGER_NEW: '%EASYLOGIN_SERVICE_SECRETMANAGER_NEW%'
+
+            EASYLOGIN_SERVICE_DEVICE: '%EASYLOGIN_SERVICE_DEVICE%'
+            EASYLOGIN_SERVICE_DEVICE_REPLACE: '%EASYLOGIN_SERVICE_DEVICE_REPLACE%'
+            EASYLOGIN_SERVICE_DEVICE_REPLACE_PIN: '%EASYLOGIN_SERVICE_DEVICE_REPLACE_PIN%'
+
+            SERVICE_API_KEY: '%SERVICE_API_KEY%'
+            SERVICE_API_SECRET: '%SERVICE_API_SECRET%'
+            DATA_HASH_SECRET: '%DATA_HASH_SECRET%'
+
+            ZERO_INTRUSION_DOMAIN: '%ZERO_INTRUSION_DOMAIN%'
+            ZERO_INTRUSION_SHARED_BASE: '%ZERO_INTRUSION_SHARED_BASE%'
+            ZERO_INTRUSION_DOMAIN_READ_BASE: '%ZERO_INTRUSION_DOMAIN_READ_BASE%'
+            ZERO_INTRUSION_DOMAIN_DELETE_BASE: '%ZERO_INTRUSION_DOMAIN_DELETE_BASE%'
+            ZERO_INTRUSION_VAULT_READ_BASE: '%ZERO_INTRUSION_VAULT_READ_BASE%'
+            ZERO_INTRUSION_VAULT_EDIT_BASE: '%ZERO_INTRUSION_VAULT_EDIT_BASE%'
+            ZERO_INTRUSION_VAULT_DELETE_BASE: '%ZERO_INTRUSION_VAULT_DELETE_BASE%'
+            ZERO_INTRUSION_SYSTEM_HUB_BASE: '%ZERO_INTRUSION_SYSTEM_HUB_BASE%'
+            ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION: '%ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION%'
+
+            ZERO_INTRUSION_ACCOUNT: '%ZERO_INTRUSION_ACCOUNT%'
+
+    App\Twig\AppExtension:
+        arguments:
+            $requestStack: '@request_stack'
+        tags: ['twig.extension']
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones

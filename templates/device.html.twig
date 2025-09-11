@@ -1,0 +1,37 @@
+{# templates/base.html.twig #}
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="Handy first, the QR Identification">
+		<meta name="author" content="Robert Böszörmenyi">
+
+		<title>
+			{% block title %}Zero Intrusion Lock & Layered Encryption – Secure QR Authentication
+			{% endblock %}
+		</title>
+		{% block stylesheets %}
+			<link rel="stylesheet" href="{{ asset('styles/style.css') }}">
+		{% endblock %}
+	</head>
+	<body>
+
+
+		<div class="container-fluid">
+			{% block container %}
+				{{include('partials/header.html.twig')}}
+				
+                <div id="content">
+					{% block content %}
+						<main>
+							{% block body %}{% endblock %}
+						</main>
+					{% endblock %}
+				</div>
+                
+			{% endblock %}
+		</div>
+
+	</body>
+</html>

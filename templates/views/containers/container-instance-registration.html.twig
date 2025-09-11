@@ -1,0 +1,11 @@
+{% extends 'index.html.twig' %}
+
+{% block title %}Instance registration
+{% endblock %}
+
+{% block body %}
+
+	{{ include('views/registration/subscription.html.twig', 
+	_context|merge({'title': 'Instance registration request'}))}}
+
+{% endblock %}

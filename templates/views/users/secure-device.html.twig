@@ -1,0 +1,34 @@
+{% extends 'index.html.twig' %}
+
+    {% block title %}Login
+{% endblock %}
+
+{% block body %}
+    <section class="section" style="text-align:center">
+        <h2>Zero Intrusion Lock & Layered Entcryption</h2>
+        <p>
+            The Secure device registration to the on touch Zero Intrusion system is ready.
+        </p>
+        <p>
+            You can try it straight ahead. For example: log out, start the mobile app, and log in again.
+        </p>
+        
+        <div id="display"></div>
+    </section> 
+
+
+<script>
+     var userPublicId = "{{ userPublicId|e('js') }}";
+    localStorage.setItem("userPublicId", userPublicId);
+
+    // Twig variable send to the extension to store in the extension-storage
+    //var userPublicId = "simple-6-my-little-pony";
+    //console.log("Secure device userPublicId:", userPublicId);
+    //document.addEventListener("DOMContentLoaded", () => {
+    //    window.postMessage({ type: "SET_USER_PUBLIC_ID", value: userPublicId }, "*");
+    //});
+    
+</script>
+
+
+{% endblock %}

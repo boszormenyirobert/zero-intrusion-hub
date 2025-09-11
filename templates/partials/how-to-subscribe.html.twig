@@ -1,0 +1,101 @@
+<section class="section">
+	<h2>
+		📦 How Companies subscribe for the service ?
+	</h2>
+	<div class="content-box">
+		<p>
+			When registering for Zero Intrusion Lock & Layered Encryption, companies receive a secure credential
+			          package, enabling them to integrate user login through QR codes. This system
+			          prioritizes
+			<strong>
+				cybersecurity
+			</strong>
+			,
+			<strong>
+				data integrity
+			</strong>
+			, and
+			<strong>
+				ease of use
+			</strong>
+			.
+		</p>
+
+		<div class="content-box">
+			<p>
+				<strong>
+					To secure communication you retrived from us:
+				</strong>
+			</p>
+			<ul>
+				<li>
+					<strong>
+						service_api_key
+					</strong>
+					– unique api key to identify yourself during to communication with our
+					                service
+				</li>
+				<li>
+					<strong>
+						service_api_secret
+					</strong>
+					– unique secret used to authenticate all outgoing API requests via HMAC-SHA256.
+				</li>
+				<li>
+					<strong>
+						corporate_id
+					</strong>
+					– a unique company identifier provided during registration and api communication.
+				</li>
+				<li>
+					<strong>
+						corporate_id_key
+					</strong>
+					– a unique company identifier provided during registration.
+				</li>
+				<li>
+					<strong>
+						corporate_id_secret
+					</strong>
+					– a secure key used to cryptographically validate the corporate identity.
+				</li>
+				<li>
+					<strong>
+						data_hash_secret
+					</strong>
+					– used to hash the body content of API calls to verify authenticity.
+				</li>
+			</ul>
+			<p>
+				<strong>
+					but we need also 2 things from you:
+				</strong>
+			</p>
+			<ul>
+				<li>
+					<strong>
+						callback_path_subscription
+					</strong>
+					– defines the endpoint for validating the service subscription
+				</li>
+				<li>
+					<strong>
+						callback_path_subscription_user_session
+					</strong>
+					– defines the endpoint for validating the user-session
+				</li>
+			</ul>
+			<p>
+				Each company must generate their own QR code containing:
+			</p>
+			<ul>
+				<li>
+					A 256-character random hash
+				</li>
+				<li>
+					The corporate_id, hashed together with the corporate_id_key using HMAC-SHA256
+					                and Base64 encoding
+				</li>
+			</ul>
+		</div>
+	</section>

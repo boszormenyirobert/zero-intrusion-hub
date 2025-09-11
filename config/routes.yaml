@@ -1,0 +1,10 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+business:
+    path: /business
+    controller: App\Controller\Business\BusinessBasicController::business
+    options:
+        jwt_required: true

@@ -1,0 +1,115 @@
+
+{% extends 'index.html.twig' %}
+
+{% block title %}Business Services
+{% endblock %}
+
+
+{% block body %}
+	{% if service_auth_data is empty %}
+		<section class="section">
+		<h2>Password Manager</h2>
+		<p>Password Manager for one business unit with unlimited users.</p>
+		
+				{{ form_start(form_psw_manager, {
+					action: path('business_registration'),
+					method: 'POST',
+					attr: { 'data-turbo': 'false' }
+				}) }}
+
+			{{ form_row(form_psw_manager._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request Business Unit Basic</button>
+
+				{{ form_end(form_psw_manager) }}
+
+		</section>
+
+		<section class="section">
+		<h2>Secure biometric login service for any website, old or new.</h2>
+		<p>Biometric authentication service for seamless integration into any existing or new website.</p>
+		
+				{{ form_start(form_biometric, {
+					action: path('business_registration'),
+					method: 'POST',
+					attr: { 'data-turbo': 'false' }
+				}) }}
+
+			{{ form_row(form_biometric._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request Business Unit Basic</button>
+
+				{{ form_end(form_biometric) }}
+
+		</section>
+
+		<section class="section">
+		<h2>Business Basic</h2>
+		<p>Empower your entire organization with effortless biometric login for 3 domains, backed by a secure password manager for one business units.</p>
+		
+				{{ form_start(form_business_basic, {
+					action: path('business_registration'),
+					method: 'POST',
+					attr: { 'data-turbo': 'false' }
+				}) }}
+
+			{{ form_row(form_business_basic._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request Business Unit Basic</button>
+
+				{{ form_end(form_business_basic) }}
+
+		</section>
+
+		<section class="section">
+		<h2>Business Plus</h2>
+		<p>Empower your entire organization with effortless biometric login across unlimited domains, backed by a secure password manager for all business units.</p>
+				{{ form_start(form_business_plus, {
+					action: path('business_registration'),
+					method: 'POST',
+					attr: { 'data-turbo': 'false' }
+				}) }}
+
+			{{ form_row(form_business_plus._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request Business Unit Plus</button>
+
+				{{ form_end(form_business_plus) }}
+		</section>
+
+		<section class="section">
+		<h2>Business Pro</h2>
+		<p>Includes all Business Plus features, with added Bluetooth and AI-driven context-based identification.</p>
+				{{ form_start(form_business_pro, {
+					action: path('business_registration'),
+					method: 'POST',
+					attr: { 'data-turbo': 'false' }
+				}) }}
+
+			{{ form_row(form_business_pro._token) }}
+			{# ensures CSRF token is included #}
+			<button type="submit">Request Business Unit Plus</button>
+				{{ form_end(form_business_pro) }}
+		</section>
+	{% endif %}
+	{% if service_auth_data is not empty %}
+		<section class="section">
+			<div class="content-box">			
+				<p>
+					The unique identity credentials you receive are
+					<strong>confidential—keep them safe and do not share them with anyone.</strong>
+				</p>
+				{% for key, value in service_auth_data %}
+					<div class="row">
+						<div class="left">
+							<strong>{{ key }}:</strong>
+						</div>
+						<div class="right">{{ value }}</div>
+						<hr>
+					</div>
+				{% endfor %}
+			</div>
+			<a href="{{ url('instance_registration_follow_up') }}"><button type="submit">Registration confirmation</button></a>
+		</section>
+	{% endif %}	
+{% endblock %}

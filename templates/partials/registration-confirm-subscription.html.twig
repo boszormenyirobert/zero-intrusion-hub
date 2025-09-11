@@ -1,0 +1,30 @@
+		<div class="form-placeholder">
+			<h2>
+				I am ready to make the final activate-process and test the service.
+			</h2>
+
+			<ul>
+				<li>To do that, you have to the hash the corporate_id_key with the corporate_id_key with the same method,
+					          as it is presented in the qr-code "CORPORATE_ID": "[encrypted_value]", part.
+				</li>
+				<hr>
+				<li>
+					You should create an POST Api-endpoint which has to following configuration:                  
+					              Authorization: WE_SEND_YOU_YOUR_HASHED_CORPORATE_ID_KEY
+					              and in the bode {
+					                "NEW_REGISTRATED_USER": FROM_US_GENERATED_UNIQUE_USER_ID_HASH, which you will get in encrypted form.
+					                To the decryption you should use your DATA_ENCRYYPTOR_HASH as it is presented in the QR-data hasher documentation.
+					              }
+					              And you have to send it through the following input fields with you hashed CORPORATE_ID.
+				</li>
+				<hr>
+				<li>
+					You should the decrypted userHash with the own system entcryption-method encrypt and save in you Database as 
+					            an unique user identifier. And that is it, the registration process is over, and the user can login. 
+					            As a return we accepted only the following:
+					              { 
+					                "NEW_USER_REGISTRATION_PROCESS": true || false
+					                }
+				</li>
+			</ul>
+		</div>

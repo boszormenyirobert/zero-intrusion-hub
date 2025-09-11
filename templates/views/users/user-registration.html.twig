@@ -1,0 +1,11 @@
+{% extends 'index.html.twig' %}
+
+{% block title %}Registration
+{% endblock %}
+
+{% block body %}
+    <section class="section" style="text-align:center">
+        <h2>Registration on this side</h2>        
+        <img src="data:image/png;base64,{{ qrCode['qrCode'] }}" alt="QR Code">
+    </section>
+{% endblock %}

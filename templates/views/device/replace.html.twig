@@ -1,0 +1,29 @@
+{% extends 'device.html.twig' %}
+
+{% block title %}Device as Identity with QR
+{% endblock %}
+
+{% block body %}
+
+	<section class="section">
+		<h2>
+			🔐 End-to-End Security – No Compromise
+		</h2>
+		<div class="content-box">
+			<div class="form-placeholder">
+				
+				{{ form_start(replace_device, {
+					action: path('replaceDeviceForm'),
+					method: 'POST'
+				}) }}
+
+				{{form_widget(replace_device)}}
+
+				<button type="submit">Recovery user data</button>
+
+				{{ form_end(replace_device) }}
+			</div>
+		</div>
+	</section>
+
+{% endblock %}

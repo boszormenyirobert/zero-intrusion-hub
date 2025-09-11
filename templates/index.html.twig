@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="Handy first, the QR Identification">
+		<meta name="author" content="Robert Böszörmenyi">
+		<title>
+			{% block title %}Zero Intrusion Lock & Layered Encryption – Secure QR Authentication
+			{% endblock %}
+		</title>
+		{% block stylesheets %}
+			<link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=123">
+		{% endblock %}
+			{{ encore_entry_link_tags('app') }}
+			{{ encore_entry_script_tags('app') }}
+	</head>
+	<body>
+		<div class="container-fluid">
+			{% block container %}
+				{{include('partials/header.html.twig')}}
+				<div id="content">
+					{% block content %}
+						<div class="btn-group" role="group" aria-label="Basic example">
+							{% block buttons %}
+								<div class="menu">
+									<nav>
+										<ul>
+											{# {% if is_jwt_valid %} #}
+												<li><a href="http://zeroproxyapi.local:8082/">Home</a></li>
+												{% if menuItem_instanceRegistration %}
+													<li>
+														<a href="/instance">Instance</a>
+														<ul>
+															<li><a href="/instance-registration">Instance Registration</a></li>
+															<li><a href="/instance-registration-follow-up">Instance Registration Confirmation</a></li>													
+														</ul>
+													</li>
+												{% endif %} 
+												<li>
+													<a href="/business">Business</a>									
+												</li>		
+											{# {% endif %}	#}		
+												<li>
+													<a href="/account">Account</a>									
+												</li>																								
+										</ul>
+									</nav>								
+							{% endblock %}
+						</div>
+						<main>
+							{% block body %}{% endblock %}
+						</main>
+					{% endblock %}
+				</div>
+			{% endblock %}
+		</div>
+		{% block javascript %}{% endblock %}
+	{#	{{dump()}} #}
+		<!--script>
+			var userPublicId = null;
+
+			{% if userPublicId is defined %}
+				userPublicId = "{{ userPublicId|e('js') }}";		
+			{% endif %}
+
+			// Listener a content script 
+			window.addEventListener("message", (event) => {
+				if (event.source === window && event.data?.type === "FROM_EXTENSION" && event.data.data) {
+					const id = event.data.data;
+					console.log("Received userPublicId:", id);
+
+					// Update HTML link
+					const link = document.getElementById("user-login");
+					if (link) {
+						link.href = `/user-login?userPublicId=${encodeURIComponent(id)}`;
+					}
+				}
+			});
+
+			// GET request to the extension
+			function requestUserPublicId() {
+				window.postMessage({ type: "GET_USER_PUBLIC_ID" }, "*");
+			}
+
+			// Wait for the DOM to be fully loaded before sending the request
+			document.addEventListener("DOMContentLoaded", () => {
+				requestUserPublicId();
+			});
+		</script-->
+	</body>
+</html>
