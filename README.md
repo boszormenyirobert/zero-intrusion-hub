@@ -1,4 +1,10 @@
-# easypublic
+# Project installation
+
+.env.local
+composer install
+php bin/console doctrine:migrations:migrate
+npm install
+npm run build
 
 
 # Data Integrity between easypublic and easylogin:

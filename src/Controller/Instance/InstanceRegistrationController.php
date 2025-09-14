@@ -12,10 +12,12 @@ use App\Form\CorporateType;
 use Psr\Log\LoggerInterface;
 use App\Attribute\JwtRequired;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 class InstanceRegistrationController extends AbstractController
 {
     public function __construct(
+        private ContainerBagInterface $params,
         private LoggerInterface $logger
     ) {}
 
@@ -37,7 +39,7 @@ class InstanceRegistrationController extends AbstractController
             // $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';   
             // $jwt_token = $jwtEncoder->decode($jwtTokenEncoded);
         
-            $publicId = "6ebIY8srJAJ+AeXzcuYknCr3OCBi89rVt///NdG50oYyZWE=";
+            $publicId = $this->params->get('INSTALLATION_PUBLIC_ID');
             $this->logger->critical('PublicId for instance registration', ['publicId' => $publicId]);   
 
             $subscriptionData = $subscriptionService->getSubscriptionData($process, $businessModel, 'internal', $publicId);            
