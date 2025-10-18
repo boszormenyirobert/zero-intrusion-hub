@@ -6,6 +6,10 @@ php bin/console doctrine:migrations:migrate
 npm install
 npm run build
 
+# create database
+php bin/console doctrine:database:create
+php bin/console doctrine:migrations:migrate
+
 
 # Data Integrity between easypublic and easylogin:
 
