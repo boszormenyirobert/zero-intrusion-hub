@@ -55,7 +55,6 @@ final class AuthorizationHelper
 
     public function controllAuthorizationHeader($data, $response)
     {
-        dd($data);
         $encryptedData = $data->corporateIdentity;
         $decodedJsonData = json_decode($response->getContent(), true);
         $ivBase64 = $decodedJsonData['iv'];
