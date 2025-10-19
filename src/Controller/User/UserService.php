@@ -35,6 +35,9 @@ class UserService
             'hmac'     => $hmac,
         ] = $this->getPublicIdDomainHmac($corporateIdentification);
 
+        dd($corporateIdentification);
+
+
         $response = $this->authorizationControllService->getSecurePostRequest([
             $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
         ]);

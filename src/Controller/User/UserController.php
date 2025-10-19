@@ -35,7 +35,7 @@ class UserController extends AbstractController
         if ($request->query->has('userPublicId')) {
             $userPublicId = $request->query->get('userPublicId');
         }
-dd($userPublicId);
+
         return $this->render('views/users/user-login.html.twig', [
             'authentication' => $this->userService->getQrCode('user_login', [],  $userPublicId),
             'userLoginCsrf' => $token,
