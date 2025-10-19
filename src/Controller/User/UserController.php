@@ -30,7 +30,7 @@ class UserController extends AbstractController
         ) {  
 
         $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
-        
+        dd($token);
         $userPublicId = null;
         if ($request->query->has('userPublicId')) {
             $userPublicId = $request->query->get('userPublicId');
