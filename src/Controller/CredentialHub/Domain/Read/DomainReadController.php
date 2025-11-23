@@ -72,6 +72,32 @@ class DomainReadController extends AbstractController
     /**
      * Called by Mobile App
      */
+    #[Route('/credential/decrypted', name: 'domain_read_credential_encrypted', methods: "POST")]
+    public function domainReadCredentialEncrypted(
+        Request $request,
+        UserRegistrationService $userRegistrationService
+    ): JsonResponse {
+        $contentJson = $request->getContent();
+
+        $process = "domdomain_read_credential_encryptedain_read_credential";
+
+        /** @var Response $response */
+        $response = $userRegistrationService->forwardRegistration(
+            [
+                $process => json_decode($contentJson),
+                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
+                ]
+        );
+
+        $content = $response->getContent();
+        $decodedJson = \json_decode($content);
+
+        return $this->json($decodedJson);
+    }
+
+    /**
+     * Called by Mobile App
+     */
     #[Route('/credential', name: 'domain_read_credential', methods: "POST")]
     public function domainReadCredential(
         Request $request,
