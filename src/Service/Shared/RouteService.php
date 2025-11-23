@@ -99,7 +99,7 @@ class RouteService
         return [
             RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
             RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_credential_encrypted'] => [$base, RouteService::PATH['credential/decrypted']],
+            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_credential_encrypted'] => [$base, 'credential/decrypted'],
             RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_state'] => [$base, RouteService::PATH['state']],
         ];
     }   
