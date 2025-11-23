@@ -134,7 +134,7 @@ final class AuthorizationHelper
             $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
             $content = $response->getContent(false);
 
-            // Ha JSON a válasz
+            // If JSON response
             if (str_contains($contentType, 'application/json')) {
                 $decoded = json_decode($content, true);
 
@@ -149,7 +149,7 @@ final class AuthorizationHelper
                 }
             }
 
-            // Ha nem JSON vagy hibás
+            // If not JSON or invalid
             return new JsonResponse([
                 'error' => 'Non-JSON or invalid response',
                 'status' => 403,
