@@ -27,7 +27,7 @@ class InstanceSettingsService
         }
 
         // BASE SETTINGS TO SECURE COMMUNICATION BETWEEN THE SERVERS
-        $this->domain = 'zeroproxyapi.local:8082';  
+        $this->domain = $params->get('ZERO_INTRUSION_HUB_DOMAIN');
         $this->serviceApiKey = $params->get('SERVICE_API_KEY');
         $this->serviceApiSecret = $params->get('SERVICE_API_SECRET');
 

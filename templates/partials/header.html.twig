@@ -45,9 +45,12 @@
 	</div>
 </header>
 <script>
-	var userPublicId = localStorage.getItem("userPublicId");
-	if (userPublicId) {
-		let link = document.getElementById("user-login");
-		link.href = `/user-login?userPublicId=${encodeURIComponent(userPublicId)}`;
-	}
+    var userPublicId = localStorage.getItem("userPublicId");
+    var isJwtValid = {{ is_jwt_valid ? 'true' : 'false' }}; 
+    if (userPublicId && !isJwtValid) {
+        let link = document.getElementById("user-login");
+        if (link) {
+            link.href = `/user-login?userPublicId=${encodeURIComponent(userPublicId)}`;
+        }
+    }
 </script>
