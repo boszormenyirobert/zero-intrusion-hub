@@ -79,7 +79,7 @@ class DomainReadController extends AbstractController
     ): JsonResponse {
         $contentJson = $request->getContent();
 
-        $process = "domdomain_read_credential_encryptedain_read_credential";
+        $process = "domain_read_credential_encrypted";
 
         /** @var Response $response */
         $response = $userRegistrationService->forwardRegistration(
