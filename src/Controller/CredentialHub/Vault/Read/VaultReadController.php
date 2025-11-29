@@ -42,6 +42,32 @@ class VaultReadController extends AbstractController
 
     /**
      * Called by Mobile App
+     */
+    #[Route('/credential/decrypted', name: 'vault_read_credential_encrypted', methods: "POST")]
+    public function vaultReadCredentialEncrypted(
+        Request $request,
+        UserRegistrationService $userRegistrationService
+    ): JsonResponse {
+        $contentJson = $request->getContent();
+
+        $process = "vault_read_credential_encrypted";
+
+        /** @var Response $response */
+        $response = $userRegistrationService->forwardRegistration(
+            [
+                $process => json_decode($contentJson),
+                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
+                ]
+        );
+
+        $content = $response->getContent();
+        $decodedJson = \json_decode($content);
+        $this->logger->critical('Domain Read Credential Encrypted Response', ['response' => $decodedJson]);
+        return $this->json($decodedJson);
+    }
+
+    /**
+     * Called by Mobile App
      */   
     #[Route('/credential', name: 'vault_read_credential', methods: "POST")]
     public function vaultReadCredential(

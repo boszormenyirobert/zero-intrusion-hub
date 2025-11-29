@@ -78,7 +78,7 @@ class DomainReadController extends AbstractController
         $contentJson = $request->getContent();
 
         $process = "domain_read_credential_encrypted";
- $this->logger->critical('Domain Read Credential Encrypted Response', ['request' => $contentJson]);
+
         /** @var Response $response */
         $response = $userRegistrationService->forwardRegistration(
             [
