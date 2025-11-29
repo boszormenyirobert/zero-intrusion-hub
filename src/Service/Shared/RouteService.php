@@ -34,6 +34,7 @@ class RouteService
 
         'vault_delete_qr_identity' => 'vault_delete_qr_identity',
         'vault_delete_credential' => 'vault_delete_credential',
+        'vault_read_credential_encrypted' => 'vault_read_credential_encrypted',
         'vault_delete_state' => 'vault_delete_state',        
 
         'vault_edit_qr_identity' => 'vault_edit_qr_identity',
@@ -132,6 +133,7 @@ class RouteService
         return [
             RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
             RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_credential'] => [$base, RouteService::PATH['credential']],
+            RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_credential_encrypted'] => [$base, 'credential/decrypted'],
             RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_state'] => [$base, RouteService::PATH['state']],
         ];
     }
