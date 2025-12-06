@@ -25,16 +25,16 @@
             <div style="padding:15px 0;">
             {#    <h2>Hello: {{is_jwt_valid.username}}</h2>        #}
                 {% if businessSubscription is not empty %}
-                    <strong>Business package:</strong>
-                    {% for key, value in pills %}
-                        {% if key == businessSubscription.subscription %}
-                            <strong>{{ value }}</strong>
-                        {% else %}
-                        {{ value }} /
-                        {% endif %}
-                    {% endfor %}
+                        <strong>Business package:</strong>
+                        {% for key, value in pills %}
+                            {% if key == businessSubscription.subscription %}
+                                <strong>{{ value }}</strong>
+                            {% else %}
+                            {{ value }} /
+                            {% endif %}
+                        {% endfor %}
                     {% else %}
-                    <strong>No business package selected</strong>
+                    <strong>No business package selected {{ dump(businessSubscription) }}</strong>
                 {% endif %}
                 <br>                
             </div>
