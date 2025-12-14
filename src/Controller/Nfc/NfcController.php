@@ -40,7 +40,7 @@ class NfcController extends AbstractController
             $process = "api_nfc_users"; 
 
             $corporateIentification['hmac'] = $headers['x-client-auth'];
-$this->json($corporateIentification);
+return $this->json($corporateIentification);
             $response = $this->userService->getNfcUsers($process, $corporateIentification);
 
             return $this->json($response);
