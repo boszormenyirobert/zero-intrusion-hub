@@ -178,7 +178,7 @@ class RouteService
         return [
             RouteService::ALLOWED_INTEGRITY_KEYS['user_registration'] => [$base, '/registration' . RouteService::PATH['qrIdentity']],
             RouteService::ALLOWED_INTEGRITY_KEYS['user_login'] => [$base, '/login' . RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' . RouteService::PATH['users']]            
+            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' , RouteService::PATH['users']]            
         ];
     }
 

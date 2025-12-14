@@ -51,7 +51,6 @@ class AuthorizationControllService
     public function getSecurePostRequest(array $dataIntegrity)
     {
         $target = $this->routeService->mapRoute($dataIntegrity);
-        return $target;
         $initEncryptedData = new CrypterService($dataIntegrity, $this->params);
         $authHelper = $this->getAuthorizationHelper();
         
