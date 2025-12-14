@@ -28,7 +28,7 @@ class NfcController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
-    #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "GET")]
+    #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
     public function getNfcUsers(
         Request $request,
         JwtService $jwtService
