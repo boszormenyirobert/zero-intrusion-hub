@@ -62,7 +62,7 @@ class UserService
 
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);       
 
-        return $authorizedData;
+        return $response;
     }
 
     public function allowSetUserLoginProcess(RegistrationProcessDTO $authorizedUser): bool
