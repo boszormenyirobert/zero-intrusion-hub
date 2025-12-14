@@ -55,6 +55,7 @@ final class AuthorizationHelper
 
     public function controllAuthorizationHeader($data, $response)
     {
+        $this->logger->critical('AuthorizationHelper::controllAuthorizationHeader called' , ['response' => json_encode($data)]);
         $encryptedData = $data->corporateIdentity;
         $decodedJsonData = json_decode($response->getContent(), true);
         $ivBase64 = $decodedJsonData['iv'];
