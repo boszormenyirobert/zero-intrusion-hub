@@ -56,8 +56,8 @@ class UserService
         ] = $this->getPublicIdDomainHmac($corporateIdentification);
 
         
-        return ['users' => ['boszormenyirobert@yahoo.com','vilagteteje@freemail.hu']];
-        
+        return ['users' => ['2boszormenyirobert@yahoo.com','2vilagteteje@freemail.hu']];
+
         $response = $this->authorizationControllService->getSecurePostRequest([
             $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
         ]);
