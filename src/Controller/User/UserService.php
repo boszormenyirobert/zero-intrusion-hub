@@ -58,6 +58,8 @@ class UserService
             $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
         ]);
 
+        return $response;
+
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);       
 
         return $response;
