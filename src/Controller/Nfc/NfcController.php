@@ -33,7 +33,15 @@ class NfcController extends AbstractController
         Request $request,
         JwtService $jwtService
         ) {
-            $response = ['users' => ['boszormenyirobert@yahoo.com','vilagteteje@freemail.hu']];
+            $headers =  $request->headers->all();
+
+            $corporateIentification = json_decode($request->getContent(), true);       
+
+            $process = "api_nfc_users"; 
+
+            $corporateIentification['hmac'] = $headers['x-client-auth'];
+
+            $response = $this->userService->getNfcUsers($process, $corporateIentification);
 
             return $this->json($response);
         }

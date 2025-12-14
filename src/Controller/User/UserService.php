@@ -47,6 +47,27 @@ class UserService
         return $authorizedData;
     }
 
+    public function getNfcUsers($process, $corporateIdentification, $userPublicId = null)
+    {
+        [
+            'publicId' => $publicId,
+            'domain'   => $domain,
+            'hmac'     => $hmac,
+        ] = $this->getPublicIdDomainHmac($corporateIdentification);
+
+        
+        return ['users' => ['boszormenyirobert@yahoo.com','vilagteteje@freemail.hu']];
+        
+        $response = $this->authorizationControllService->getSecurePostRequest([
+            $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
+        ]);
+
+        $authorizedData = $this->authorizationControllService->controllAuthorization($response);
+        $this->saveProcess($process, $authorizedData);
+
+        return $authorizedData;
+    }
+
     public function allowSetUserLoginProcess(RegistrationProcessDTO $authorizedUser): bool
     {
         $ok = $this->sslValidation($authorizedUser);
