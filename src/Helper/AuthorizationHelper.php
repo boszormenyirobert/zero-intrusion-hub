@@ -52,7 +52,6 @@ final class AuthorizationHelper
     {
         return $this->ivBase64;
     }
-
     public function controllAuthorizationHeader($data, $response)
     {
         $this->logger->critical('AuthorizationHelper::controllAuthorizationHeader called' , ['response' => json_encode($data)]);
