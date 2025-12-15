@@ -41,7 +41,13 @@ class NfcController extends AbstractController
 
             $corporateIentification['hmac'] = $headers['x-client-auth'];
 
-            $response = $this->userService->getNfcUsers($process, $corporateIentification);
+                    /** @var Response $response */
+        $response = $userRegistrationService->forwardRegistration(
+            [
+                $process => $corporateIentification,
+                'X-Extension-Auth' => $corporateIentification['hmac']
+            ]
+        );
 
             return $this->json($response);
         }
