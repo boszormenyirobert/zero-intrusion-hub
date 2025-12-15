@@ -46,19 +46,8 @@ class UserService
     }
 
     public function getNfcUsers($process, $corporateIdentification, $userPublicId = null)
-    {
-        [
-            'publicId' => $publicId,
-            'domain'   => $domain,
-            'hmac'     => $hmac,
-        ] = $this->getPublicIdDomainHmac($corporateIdentification);
-
-        
-        $response = $this->authorizationControllService->getSecurePostRequest([
-            $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
-        ]);
-
-        return $response;
+    {        
+        return $this->authorizationControllService->getSecurePostRequest($this->getPublicIdDomainHmac($corporateIdentification));
     }
 
     public function allowSetUserLoginProcess(RegistrationProcessDTO $authorizedUser): bool
