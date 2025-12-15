@@ -17,6 +17,7 @@ use App\DTO\RegistrationProcessDTO;
 use Symfony\Component\HttpFoundation\Response;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Service\JWT\JwtService;
+use App\Service\User\UserRegistrationService;
 
 class NfcController extends AbstractController
 {
@@ -31,7 +32,8 @@ class NfcController extends AbstractController
     #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
     public function getNfcUsers(
         Request $request,
-        JwtService $jwtService
+        JwtService $jwtService,
+        UserRegistrationService $userRegistrationService
         ) {
             $headers =  $request->headers->all();
 
