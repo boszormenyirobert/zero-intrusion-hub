@@ -38,7 +38,7 @@ class UserService
         $response = $this->authorizationControllService->getSecurePostRequest([
             $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
         ]);
-
+        
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);
         $this->saveProcess($process, $authorizedData);
 

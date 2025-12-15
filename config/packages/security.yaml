@@ -41,6 +41,7 @@ security:
     access_control:
         - { path: ^/api/registration/callback, roles: PUBLIC_ACCESS }    
         - { path: ^/api/user-login/callback, roles: PUBLIC_ACCESS }
+        - { path: ^/api/nfc/users, roles: PUBLIC_ACCESS }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
 
