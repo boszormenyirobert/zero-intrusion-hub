@@ -1,7 +1,8 @@
 <?php
-
+/**
+ * HUB VIEW with API call
+ */
 namespace App\Controller\Instance;
-
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;

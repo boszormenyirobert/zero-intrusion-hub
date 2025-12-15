@@ -49,6 +49,7 @@ class RouteService
         'user_registration' => 'user_registration',
         'user_login' => 'user_login',
         'api_nfc_users' => 'api_nfc_users',
+        'api_nfc_decrypt' => 'api_nfc_decrypt',
 
         'get_registrated_business' => 'get_registrated_business',
         'business_create' => 'business_create',
@@ -178,7 +179,8 @@ class RouteService
         return [
             RouteService::ALLOWED_INTEGRITY_KEYS['user_registration'] => [$base, '/registration' . RouteService::PATH['qrIdentity']],
             RouteService::ALLOWED_INTEGRITY_KEYS['user_login'] => [$base, '/login' . RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' , RouteService::PATH['users']]            
+            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' , RouteService::PATH['users']],
+            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_decrypt'] => ['/api/nfc' , RouteService::PATH['decrypt']]            
         ];
     }
 

@@ -29,11 +29,12 @@ class NfcController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
+
     #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
     public function getNfcUsers(
         Request $request,
         JwtService $jwtService,
-        UserRegistrationService $userRegistrationService
+        UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
         ) {
             $headers =  $request->headers->all();
 
@@ -43,14 +44,39 @@ class NfcController extends AbstractController
 
             $corporateIentification['hmac'] = $headers['x-client-auth'];
 
-                    /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
+            /** @var Response $response */
+            $response = $userRegistrationService->forwardRegistration(
             [
                 $process => $corporateIentification,
                 'X-Extension-Auth' => $corporateIentification['hmac']
             ]
         );
 
-            return $this->json($response);
-        }
+        return $this->json($response);
+    }
+
+    #[Route('/api/nfc/decrypt', name: 'api_nfc_decrypt', methods: "POST")]
+    public function NfcDecryptCardData(
+        Request $request,
+        JwtService $jwtService,
+        UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
+        ) {
+            $headers =  $request->headers->all();
+
+            $data = json_decode($request->getContent(), true);       
+
+            $process = "api_nfc_decrypt"; 
+
+            $data['hmac'] = $headers['x-client-auth'];
+
+            /** @var Response $response */
+            $response = $userRegistrationService->forwardRegistration(
+            [
+                $process => $data,
+                'X-Extension-Auth' => $data['hmac']
+            ]
+        );
+
+        return $this->json($response);
+    }    
 }

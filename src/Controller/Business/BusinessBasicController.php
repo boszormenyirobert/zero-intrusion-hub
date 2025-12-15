@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * HUB VIEW with API call
+ */
 namespace App\Controller\Business;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

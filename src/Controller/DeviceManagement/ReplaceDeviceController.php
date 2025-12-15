@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Device replacement and recovery process => The user have the device. E-mail or Phone-number changed
+ */
+
 namespace App\Controller\DeviceManagement;
 
 use App\Form\ReplaceDevicePinType;
@@ -22,7 +26,13 @@ class ReplaceDeviceController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-    // Get Username and Phonenumber
+    /** 
+     * 
+     * First step in the device replacement process.
+     * Retrive email and phone number from the request payload,
+     * Send email and SMS
+     * Move the data to the recovery table
+     */
     #[Route('/replace-device', name: 'replaceDeviceForm')]
     public function replaceDevice(
         Request $request,
@@ -45,7 +55,13 @@ class ReplaceDeviceController extends AbstractController
         ]);
     }
 
-    // Controll Pin
+
+    /** 
+     * 
+     * Second step in the device replacement process.
+     * Pin confirmation 
+     * Return with a handy identifier // FE generates a QR code
+     */
     #[Route('/replace-device/{replaceHash}', name: 'replace_device_pin', methods: ['GET', 'POST'])]
     public function replaceDevicePin(
         String $replaceHash,

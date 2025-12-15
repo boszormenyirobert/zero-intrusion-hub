@@ -1,5 +1,8 @@
 <?php
-
+/**
+ * Handling an registrated Corporate account
+ * 
+ */
 namespace App\Controller\Account;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

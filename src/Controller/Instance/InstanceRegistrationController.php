@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * HUB VIEW with API call
+ */
 namespace App\Controller\Instance;
 
 use App\Form\IdentityRequesterType;
