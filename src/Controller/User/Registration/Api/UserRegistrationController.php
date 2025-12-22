@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller\User;
+namespace App\Controller\User\Registration\Api;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,17 +19,6 @@ class UserRegistrationController extends AbstractController
         private LoggerInterface $logger,
         private UserService $userService
     ) {}
-
-    #[Route('/user-registration', name: 'user-registration', methods: "GET")]
-    public function userRegistration() 
-    {
-        $process = "user_registration"; 
-
-        return $this->render('views/users/user-registration.html.twig', [
-            'qrCode' => $this->userService->getQrCode($process, []),
-            'menuItem_instanceRegistration' => true
-        ]);
-    }
 
     #[Route('/api/user-registration', name: 'api-user-registration', methods: "POST")]
     public function apiUserRegistration(        

@@ -1,8 +1,6 @@
 <?php
-/**
- * HUB VIEW with API call
- */
-namespace App\Controller\Instance;
+
+namespace App\Controller\Instance\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,12 +30,5 @@ class InstanceController extends AbstractController
             'is_jwt_valid' => $payload ?? false,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
         ]);
-    } 
-
-//    #[JwtRequired]
-    #[Route('/instance', name: 'instance')]
-    public function instance(): Response
-    {        
-        return $this->render('partials/instance-description.html.twig');
     } 
 }

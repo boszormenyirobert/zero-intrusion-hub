@@ -1,8 +1,6 @@
 <?php
-/**
- * HUB VIEW with API call
- */
-namespace App\Controller\Instance;
+
+namespace App\Controller\Instance\HUB;
 
 use App\Form\IdentityRequesterType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,7 +14,7 @@ use App\Attribute\JwtRequired;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
-class InstanceRegistrationController extends AbstractController
+class RegistrationController extends AbstractController
 {
     public function __construct(
         private ContainerBagInterface $params,

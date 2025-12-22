@@ -48,7 +48,6 @@ class SubscriptionService
         // );
 
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);
-        $this->logger->critical('---------------'.json_encode($authorizedData));
         if($type == 'internal'){
             $this->databaseService->createOwnClient($authorizedData);
         }

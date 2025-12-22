@@ -3,7 +3,7 @@
  * Handling an registrated Corporate account
  * 
  */
-namespace App\Controller\Account;
+namespace App\Controller\Account\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

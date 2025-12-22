@@ -1,10 +1,12 @@
 <?php
 
 /**
+ * HUB View
+ * 
  * Device replacement and recovery process => The user have the device. E-mail or Phone-number changed
  */
 
-namespace App\Controller\DeviceManagement;
+namespace App\Controller\DeviceManagement\Restore\HUB;
 
 use App\Form\ReplaceDevicePinType;
 use App\Form\ReplaceDeviceType;
@@ -17,7 +19,7 @@ use Psr\Log\LoggerInterface;
 use App\Service\Device\ReplaceDeviceService;
 use App\Service\Qr\GenerateQrService;
 
-class ReplaceDeviceController extends AbstractController
+class RestoreController extends AbstractController
 {
 
     public function __construct(

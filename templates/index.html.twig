@@ -26,8 +26,8 @@
 								<div class="menu">
 									<nav>
 										<ul>
-											{# {% if is_jwt_valid %} #}
-												<li><a href="http://82.165.219.9:8082/">Home</a></li>
+											
+												<li><a href="/">Home</a></li>
 												{% if menuItem_instanceRegistration %}
 													<li>
 														<a href="/instance">Instance</a>
@@ -40,7 +40,7 @@
 												<li>
 													<a href="/business">Business</a>									
 												</li>		
-											{# {% endif %}	#}		
+												
 												<li>
 													<a href="/account">Account</a>									
 												</li>																								
@@ -56,37 +56,10 @@
 			{% endblock %}
 		</div>
 		{% block javascript %}{% endblock %}
-	{#	{{dump()}} #}
-		<!--script>
-			var userPublicId = null;
 
-			{% if userPublicId is defined %}
-				userPublicId = "{{ userPublicId|e('js') }}";		
-			{% endif %}
+		{% if userPublicId is defined %}
+			userPublicId = "{{ userPublicId|e('js') }}";		
+		{% endif %}
 
-			// Listener a content script 
-			window.addEventListener("message", (event) => {
-				if (event.source === window && event.data?.type === "FROM_EXTENSION" && event.data.data) {
-					const id = event.data.data;
-					console.log("Received userPublicId:", id);
-
-					// Update HTML link
-					const link = document.getElementById("user-login");
-					if (link) {
-						link.href = `/user-login?userPublicId=${encodeURIComponent(id)}`;
-					}
-				}
-			});
-
-			// GET request to the extension
-			function requestUserPublicId() {
-				window.postMessage({ type: "GET_USER_PUBLIC_ID" }, "*");
-			}
-
-			// Wait for the DOM to be fully loaded before sending the request
-			document.addEventListener("DOMContentLoaded", () => {
-				requestUserPublicId();
-			});
-		</script-->
 	</body>
 </html>

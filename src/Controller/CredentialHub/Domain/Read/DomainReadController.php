@@ -89,7 +89,6 @@ class DomainReadController extends AbstractController
 
         $content = $response->getContent();
         $decodedJson = \json_decode($content);
-        $this->logger->critical('Domain Read Credential Encrypted Response', ['response' => $decodedJson]);
         return $this->json($decodedJson);
     }
 

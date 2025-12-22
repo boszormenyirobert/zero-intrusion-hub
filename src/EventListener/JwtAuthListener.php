@@ -44,8 +44,6 @@ class JwtAuthListener
         try {
             $payload = $this->jwtEncoder->decode($jwtToken);
 
-            $this->logger->critical(json_encode($payload));
-
             $isValid = $payload !== false;
 
             if (!$isValid && !empty($attributes)) {

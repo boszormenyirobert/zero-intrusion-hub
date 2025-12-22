@@ -1,6 +1,10 @@
 <?php
 
-namespace App\Controller\DeviceManagement;
+/**
+ * Identity => Describe an USER, USER DEVICE
+ * Device Registration Process => Start with the Mobile-Application installation finish with user-email and phone-number
+ */
+namespace App\Controller\DeviceManagement\Identity\Api;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +16,7 @@ use Psr\Log\LoggerInterface;
 
 
 #[Route('/api')]
-class OpenApiRecoveryController extends AbstractController
+class IdentityController extends AbstractController
 {
     public function __construct(
         private LoggerInterface $logger

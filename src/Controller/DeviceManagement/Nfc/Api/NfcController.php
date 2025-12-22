@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller\Nfc;
+namespace App\Controller\DeviceManagement\Nfc\Api;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
@@ -29,7 +29,10 @@ class NfcController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
-
+    /**
+     * Used by the Desktop Application to fetch all NFC users
+     * On the Desktop Application the encrypted NFC data will be written on the NFC card by the selected user
+     */
     #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
     public function getNfcUsers(
         Request $request,
@@ -55,6 +58,10 @@ class NfcController extends AbstractController
         return $this->json($response);
     }
 
+    /**
+     * Used by the Desktop Application to decrypt the NFC card data read from the NFC card
+     * On the Desktop Application the encrypted NFC data will be generated as a QR code
+     */    
     #[Route('/api/nfc/decrypt', name: 'api_nfc_decrypt', methods: "POST")]
     public function NfcDecryptCardData(
         Request $request,

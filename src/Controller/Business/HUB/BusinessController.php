@@ -2,7 +2,7 @@
 /**
  * HUB VIEW with API call
  */
-namespace App\Controller\Business;
+namespace App\Controller\Business\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +14,7 @@ use App\Form\BusinessRequesterType;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Form\IdentityRequesterType;
 
-class BusinessBasicController extends AbstractController
+class BusinessController extends AbstractController
 {
     #[JwtRequired]
     #[Route('/business', name: 'business_registration')]
