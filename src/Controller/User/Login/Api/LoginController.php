@@ -16,13 +16,16 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use App\DTO\RegistrationProcessDTO;
 use Symfony\Component\HttpFoundation\Response;
 
-class UserController extends AbstractController
+class LoginController extends AbstractController
 {
     public function __construct(
         private LoggerInterface $logger,
         private UserService $userService
     ) {}
 
+    /**
+     * Called from the any registrated domain to get a QR code for login
+     */
     #[Route('/api/user-login', name: 'api_instance_login', methods: "POST")]
     public function apiLogin(
         Request $request
@@ -37,6 +40,9 @@ class UserController extends AbstractController
         return $this->json($response);
     }    
 
+    /**
+     * Called from the api to confirm the login
+     */
     #[Route('/api/user-login/callback', name: 'user_login_callback', methods: ["POST"])]
     public function systemHubLoginCallback(
         Request $request
@@ -52,6 +58,9 @@ class UserController extends AbstractController
 
     }
     
+    /**
+     * Called from any registrated domain to get a new QR code for login
+     */
     #[Route('/api/user-login/new-qr', name: 'user_login_new_qr', methods: "POST")]
     public function userLoginNewQr(
         Request $request,
@@ -73,6 +82,9 @@ class UserController extends AbstractController
         ]);
     }
 
+    /**
+     * Called from any registrated domain to poll the login status
+     */
     #[Route('/api/user-login/check', name: 'user_login_check', methods: "POST")]
     public function userLoginCheck(
         Request $request,

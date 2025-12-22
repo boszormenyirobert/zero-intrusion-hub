@@ -16,13 +16,18 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use App\DTO\RegistrationProcessDTO;
 use Symfony\Component\HttpFoundation\Response;
 
-class UserController extends AbstractController
+class LoginController extends AbstractController
 {
     public function __construct(
         private LoggerInterface $logger,
         private UserService $userService
     ) {}
 
+    /**
+     * Called from the HUB FE to get a QR code for login
+     * The userPublicId is optional and can be used to notify a specific user via firebase for auto login
+     * Firebase notification is handled in the API 
+     */
     #[Route('/user-login', name: 'instance_login', methods: "GET")]
     public function login(
         CsrfTokenManagerInterface $csrfTokenManager, 
@@ -87,6 +92,7 @@ class UserController extends AbstractController
         }    
     }
 
+    // Logout user and clear JWT cookie clicked on logout link
     #[Route('/user-logout', name: 'instance_logout', methods: "GET")]
     public function logout(CsrfTokenManagerInterface $csrfTokenManager) {       
         $csrfTokenManager->removeToken('userLoginCsrf');

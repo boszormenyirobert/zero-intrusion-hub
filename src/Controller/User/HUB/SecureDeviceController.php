@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller\User;
+namespace App\Controller\User\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
@@ -28,6 +28,10 @@ class SecureDeviceController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
+    /** 
+     * If the user has a valid JWT token and clicks the "One Touch Activation" link, 
+     * the frontend is informed about the result of the activation. 
+     */
     #[Route('/secure-device', name: 'secure_device', methods: "GET")]
     public function secureDevice(
         Request $request,

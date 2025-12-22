@@ -13,7 +13,7 @@ use App\DTO\RegistrationProcessDTO;
 use App\Attribute\JwtRequired;
 use App\Service\User\UserRegistrationService;
 
-class UserRegistrationController extends AbstractController
+class RegistrationController extends AbstractController
 {
     public function __construct(
         private LoggerInterface $logger,
