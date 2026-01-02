@@ -38,36 +38,20 @@ class SecureDeviceController extends AbstractController
         JwtService $jwtService
         ) {  
         $userPublicId = null;
+        $userEmail = null;
 
-         $jwtToken = $jwtService->jwtValidation($request);
+        $payload = $jwtService->jwtValidation($request);
          
-         if($jwtToken && $user = $this->identifyUser($jwtToken)){
-            $userPublicId = $user['publicId'];
-         }
-
-        $jwt_token = $request->cookies->get('jwt_token') ?? '';      
-        if($jwt_token){  
-            $payload = $this->jwtEncoder->decode($jwt_token);
+        if($payload){                   
+            $userPublicId = $payload['publicId'] ?? null;
+            $userEmail = $payload['email'] ?? null;
         }         
 
         return $this->render('views/users/secure-device.html.twig', [
             'is_jwt_valid' => $payload ?? false,
             'userPublicId' => $userPublicId,
+            'userEmail' => $userEmail,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
         ]);
     }
-
-    private function identifyUser($jwtToken){
-        $userData = $this->userRepository->findOneBy([
-            'email' => $jwtToken['username']
-        ]);
-
-        if($userData){
-            return [
-                'publicId' => $userData->getPublicId()
-            ];
-        }
-
-        return false;
-    }    
 }

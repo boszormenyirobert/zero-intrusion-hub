@@ -19,7 +19,7 @@ class RouteService
         'users' => '/users'
     ];
 
-    const ALLOWED_INTEGRITY_KEYS = [
+    const ALLOWED_INTEGRITY_KEYS = [        
         'domain_read_qr_identity' =>'domain_read_qr_identity',
         'domain_read_credential' => 'domain_read_credential', 
         'domain_read_credential_encrypted' => 'domain_read_credential_encrypted',
@@ -54,6 +54,10 @@ class RouteService
         'get_registrated_business' => 'get_registrated_business',
         'business_create' => 'business_create',
 
+        'one_touch_qr_identity' => 'one_touch_qr_identity',
+        'one_touch_identifier' => 'one_touch_identifier',
+        'one_touch_state' => 'one_touch_state',
+
         // TODO: Missing refactoring
         'getIdentity' => 'getIdentity',
         'updateIdentity' => 'updateIdentity',
@@ -81,6 +85,7 @@ class RouteService
                 + $this->getVaultDeleteRoutes()
                 + $this->getSystemHubRoutes()
                 + $this->geAccountRoutes()
+                + $this->getOneTouchRoutes()
                 + $this->getCorporateSubscriptionRoute(); // OLD implementation
 
         $key = array_key_first($dataIntegrity);
@@ -95,6 +100,17 @@ class RouteService
 
         return UtilityHelper::buildPath($domain, $path1, $path2);
     }
+
+    private function getOneTouchRoutes(): array
+    {
+        $base = $this->params->get('ZERO_INTRUSION_ONE_TOUCH');
+
+        return [
+            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
+            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_identifier'] => [$base, 'identifier'],
+            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_state'] => [$base, RouteService::PATH['state']],
+        ];
+    }   
 
     private function getDomainReadRoutes(): array
     {

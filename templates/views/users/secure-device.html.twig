@@ -12,22 +12,40 @@
         <p>
             You can try it straight ahead. For example: log out, start the mobile app, and log in again.
         </p>
-        
+        {{ userEmail }}
+        {{ userPublicId }}
         <div id="display"></div>
     </section> 
 
 
 <script>
-     var userPublicId = "{{ userPublicId|e('js') }}";
-    localStorage.setItem("userPublicId", userPublicId);
+    var userPublicId = "{{ userPublicId|e('js') }}";
+    var userEmail = "{{ userEmail|e('js') }}";
+    var key = "oneTouchUsers";
 
-    // Twig variable send to the extension to store in the extension-storage
-    //var userPublicId = "simple-6-my-little-pony";
-    //console.log("Secure device userPublicId:", userPublicId);
-    //document.addEventListener("DOMContentLoaded", () => {
-    //    window.postMessage({ type: "SET_USER_PUBLIC_ID", value: userPublicId }, "*");
-    //});
-    
+    function setOneTouchUsers(userPublicId, email, key) {
+        const value = localStorage.getItem(key);
+        const newUser = { userPublicId, email };
+        if (!value) {
+            localStorage.setItem(key, JSON.stringify([newUser]));
+            return;
+        }
+        try {
+            const users = JSON.parse(value);
+            if (Array.isArray(users)) {
+                const exists = users.some(u => u.userPublicId === userPublicId && u.email === email);
+                if (!exists) {
+                    users.push(newUser);
+                    localStorage.setItem(key, JSON.stringify(users));
+                }
+            } else {
+                localStorage.setItem(key, JSON.stringify([newUser]));
+            }
+        } catch (e) {
+            console.error('[ExtensionStorageService] Error parsing oneTouchUsers for set operation:', e);
+        }
+    }
+    setOneTouchUsers(userPublicId, userEmail, key);
 </script>
 
 
