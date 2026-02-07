@@ -51,6 +51,7 @@ class SecureDeviceController extends AbstractController
             'is_jwt_valid' => $payload ?? false,
             'userPublicId' => $userPublicId,
             'userEmail' => $userEmail,
+            'oneTouchActivation' => true,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
         ]);
     }

@@ -157,9 +157,7 @@ class UserService
 
         $ownClient = $this->ownClientRepository->findOneBy([], ['id' => 'ASC']); 
 
-
         $publicKeyPem =  $ownClient->getSslPublicKey();
-
         $publicKey = openssl_pkey_get_public($publicKeyPem);
         
         if (!$publicKey) {

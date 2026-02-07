@@ -20,6 +20,7 @@
 					<line x1="21" y1="12" x2="9" y2="12"/>
 				</svg>
 			</a>	
+			{% if oneTouchActivation is defined and not oneTouchActivation %}
 			<a href="/secure-device">
 			<span>One Touch Activation</span>
 						<svg style="width:25px; height=25px" xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 180 180">
@@ -28,6 +29,7 @@
 						<rect x="70" y="90" width="40" height="40" rx="8" ry="8" fill="white"/>
 						</svg>
 			</a>
+			{% endif %}
 		{% else %}
 			<a href="/user-registration">
 				<span>Registration</span>
@@ -47,23 +49,25 @@
 	</div>
 </header>
 <script>
-			// Hide One Touch Activation button if sessionStorage has oneTouchUser
+			// Hide One Touch Activation button if sessionStorage has oneTouchUser and logged in with oneTouch
 			document.addEventListener('DOMContentLoaded', function() {
 				var oneTouchUser = sessionStorage.getItem('oneTouchUser');
 				var oneTouchBtn = document.querySelector('a[href="/secure-device"]');
 				if (oneTouchUser && oneTouchBtn) {
 					oneTouchBtn.style.display = 'none';
 				}
+
 			});
-		// Logout: clear sessionStorage
-		document.addEventListener('DOMContentLoaded', function() {
-			var logoutBtn = document.querySelector('a[data-action="click->test#deleteJwt"]');
-			if (logoutBtn) {
-				logoutBtn.addEventListener('click', function() {
-					sessionStorage.removeItem('oneTouchUser');
-				});
-			}
-		});
+
+			// Logout: clear sessionStorage
+			document.addEventListener('DOMContentLoaded', function() {
+				var logoutBtn = document.querySelector('a[data-action="click->test#deleteJwt"]');
+				if (logoutBtn) {
+					logoutBtn.addEventListener('click', function() {
+						sessionStorage.removeItem('oneTouchUser');
+					});
+				}
+			});
 	var isJwtValid = {{ is_jwt_valid ? 'true' : 'false' }};
 	var oneTouchUsers = localStorage.getItem("oneTouchUsers");
 	var link = document.getElementById("user-login");
@@ -80,71 +84,90 @@
 		}
 		return null;
 	}
-	// Menü dropdown JS oldalon, ha több user van
+	// Menü dropdown JS oldalon, ha van oneTouchUsers (akár 1 is)
 	document.addEventListener('DOMContentLoaded', function() {
 		var container = document.getElementById('login-dropdown-container');
 		var loginBtn = document.getElementById('user-login');
 		var isJwtValid = {{ is_jwt_valid ? 'true' : 'false' }};
-		var oneTouchUsers = localStorage.getItem("oneTouchUsers");
-		var path = window.location.pathname;
-		// Ha van sessionStorage user, mindig automatikus átirányítás, nincs dropdown
+
+		// Ha van valid JWT, tegyük be a currentUser-t sessionStorage-ba is (currentUser kulccsal)
+		if (isJwtValid) {
+			var oneTouchUsers = localStorage.getItem("oneTouchUsers");
+			var users = [];
+			if (oneTouchUsers) {
+				try {
+					users = JSON.parse(oneTouchUsers);
+				} catch (err) { users = []; }
+			}
+			// Próbáljuk meg a sessionStorage-ból vagy az első usert választani
+			var userPublicId = null;
+			var sessionUser = sessionStorage.getItem('oneTouchUser');
+			if (sessionUser) {
+				try {
+					var obj = JSON.parse(sessionUser);
+					userPublicId = obj.userPublicId;
+				} catch (e) { userPublicId = null; }
+			}
+			if (!userPublicId && users.length > 0) {
+				userPublicId = users[0].userPublicId;
+			}
+			if (userPublicId && users.length > 0) {
+				var currentUser = users.find(function(u) { return u.userPublicId === userPublicId; });
+				if (currentUser) {
+					sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+				}
+			}
+		}
+
 		if (container && loginBtn && !isJwtValid) {
 			loginBtn.addEventListener('click', function(e) {
-				var sessionUser = sessionStorage.getItem('oneTouchUser');
-				if (sessionUser) {
-					try {
-						var obj = JSON.parse(sessionUser);
-						if (obj && obj.userPublicId) {
-							e.preventDefault();
-							window.location.href = `/user-login?userPublicId=${encodeURIComponent(obj.userPublicId)}`;
-							return;
-						}
-					} catch (err) {}
-				}
-				// Ha nincs session user, csak akkor dropdown, ha több user van localStorage-ben
 				var oneTouchUsers = localStorage.getItem("oneTouchUsers");
+				var users = [];
 				if (oneTouchUsers) {
 					try {
-						var users = JSON.parse(oneTouchUsers);
-						if (Array.isArray(users) && users.length > 1) {
-							e.preventDefault();
-							if (document.getElementById('user-select')) return;
-							var select = document.createElement('select');
-							select.id = 'user-select';
-							select.style.marginRight = '10px';
-							var defaultOption = document.createElement('option');
-							defaultOption.value = '';
-							defaultOption.textContent = '--Select user--';
-							defaultOption.disabled = true;
-							defaultOption.selected = true;
-							select.appendChild(defaultOption);
-							users.forEach(function(u) {
-								var option = document.createElement('option');
-								option.value = u.userPublicId;
-								option.textContent = u.email;
-								select.appendChild(option);
-							});
-							var newUserOption = document.createElement('option');
-							newUserOption.value = '__new__';
-							newUserOption.textContent = 'New user';
-							select.appendChild(newUserOption);
-							select.addEventListener('change', function() {
-								var userPublicId = select.value;
-								if (userPublicId === '__new__') {
-									window.location.href = '/user-login';
-									return;
-								}
-								var selectedUser = users.find(function(u) { return u.userPublicId === userPublicId; });
-								if (userPublicId && selectedUser) {
-									sessionStorage.setItem('oneTouchUser', JSON.stringify(selectedUser));
-									window.location.href = `/user-login?userPublicId=${encodeURIComponent(userPublicId)}`;
-								}
-							});
-							container.innerHTML = '';
-							container.appendChild(select);
-						}
-					} catch (e) {}
+						users = JSON.parse(oneTouchUsers);
+					} catch (err) { users = []; }
 				}
+				if (!users || users.length === 0) {
+					// Nincs oneTouchUser: sima átirányítás
+					return; // default link működik
+				}
+				// Van legalább 1 user: dropdown
+				e.preventDefault();
+				if (document.getElementById('user-select')) return;
+				var select = document.createElement('select');
+				select.id = 'user-select';
+				select.style.marginRight = '10px';
+				var defaultOption = document.createElement('option');
+				defaultOption.value = '';
+				defaultOption.textContent = '--Select user--';
+				defaultOption.disabled = true;
+				defaultOption.selected = true;
+				select.appendChild(defaultOption);
+				users.forEach(function(u) {
+					var option = document.createElement('option');
+					option.value = u.userPublicId;
+					option.textContent = u.email;
+					select.appendChild(option);
+				});
+				var newUserOption = document.createElement('option');
+				newUserOption.value = '__new__';
+				newUserOption.textContent = 'New user';
+				select.appendChild(newUserOption);
+				select.addEventListener('change', function() {
+					var userPublicId = select.value;
+					if (userPublicId === '__new__') {
+						window.location.href = '/user-login';
+						return;
+					}
+					var selectedUser = users.find(function(u) { return u.userPublicId === userPublicId; });
+					if (userPublicId && selectedUser) {
+						sessionStorage.setItem('oneTouchUser', JSON.stringify(selectedUser));
+						window.location.href = `/user-login?userPublicId=${encodeURIComponent(selectedUser.userPublicId)}`;
+					}
+				});
+				container.innerHTML = '';
+				container.appendChild(select);
 			});
 		}
 	});

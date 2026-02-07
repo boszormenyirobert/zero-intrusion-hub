@@ -18,7 +18,7 @@
 	<body>
 		<div class="container-fluid">
 			{% block container %}
-				{{include('partials/header.html.twig')}}
+				{{ include('partials/header.html.twig', { oneTouchActivation: oneTouchActivation is defined ? oneTouchActivation : false }) }}
 				<div id="content">
 					{% block content %}
 						<div class="btn-group" role="group" aria-label="Basic example">

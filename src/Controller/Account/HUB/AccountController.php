@@ -46,6 +46,7 @@ class AccountController extends AbstractController
                $businessSubscription['businessSubscription'] = [];
             }
         } else {
+            // Used only once by the HUB initialization process
             return $this->redirect($this->generateUrl('instance_login'));
         }
 
