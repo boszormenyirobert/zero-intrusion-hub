@@ -79,12 +79,20 @@ class LoginController extends AbstractController
         'mapped' => false,
     ]);
     $form = $formBuilder->getForm();
+    $userPublicId = null;
+
+
+    // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
+    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {
+        dd($request->request->all());
+         $userPublicId = $form->get('selectedUser')->getData();
+    }
     $form->handleRequest($request);
 
     // 4️⃣ Második POST: Twig form submit
-    $userPublicId = null;
+
     if ($form->isSubmitted() && $form->isValid()) {
-        $userPublicId = $form->get('selectedUser')->getData();
+     //   $userPublicId = $form->get('selectedUser')->getData();
     }
 
         return $this->render('views/users/user-login.html.twig', [
