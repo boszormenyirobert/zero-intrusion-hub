@@ -113,7 +113,7 @@ class LoginController extends AbstractController
     }
 
     // Pollling database to check if user confirmed the login via JS
-    #[Route('/user-login/check', name: 'user_login_check', methods: "GET")]
+    #[Route('/user-login/check', name: 'user_login_check', methods: "POST")]
     public function userJSCheck(
         Request $request,
         CsrfTokenManagerInterface $csrfTokenManager,
@@ -121,7 +121,7 @@ class LoginController extends AbstractController
         JWTTokenManagerInterface $jwtManager
     )
     {
-        $processId = $request->query->get('processId');
+        $processId = $request->request->get('processId');
         $user = $userRepository->findOneBy([
             'process' => $processId
         ]);
