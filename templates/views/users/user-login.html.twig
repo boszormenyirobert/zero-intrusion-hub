@@ -3,6 +3,13 @@
     {% block title %}Login
 {% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+{% endblock %}
+
 {% block body %}
     <section class="section" style="text-align:center">
         <h2>Zero Intrusion Lock & Layered Entcryption</h2>
@@ -43,6 +50,7 @@
             
             <p data-test-target="response"></p>
         </div>
+        
 <h1>{{ userPublicId }}</h1>
     </section> 
 

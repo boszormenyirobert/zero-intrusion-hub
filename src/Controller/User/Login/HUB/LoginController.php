@@ -91,10 +91,11 @@ class LoginController extends AbstractController
     // 4️⃣ Második POST: Twig form submit
 
     if ($form->isSubmitted() && $form->isValid()) {
-     //   $userPublicId = $form->get('selectedUser')->getData();
+        $userPublicId = $form->get('selectedUser')->getData();
+        dd($userPublicId);
     }
 
-        return $this->render('views/users/user-login.html.twig', [
+        $response = $this->render('views/users/user-login.html.twig', [
             'authentication' => $this->userService->getQrCode('user_login', [],  $userPublicId),
             'userLoginCsrf' => $token,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
@@ -102,6 +103,12 @@ class LoginController extends AbstractController
             'form' => $form->createView(),
             'userPublicId' => $userPublicId
         ]);
+
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 
     // Pollling database to check if user confirmed the login via JS
