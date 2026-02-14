@@ -56,8 +56,8 @@
 
 
 <script>
-const url = new URLSearchParams(window.location.search);
-const userPublicId = url.get('userPublicId');
+userLoginPath = new URLSearchParams(window.location.search);
+userPublicId = userLoginPath.get('userPublicId');
 
 if(userPublicId) {
     setInterval(function() {
