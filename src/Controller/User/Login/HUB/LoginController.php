@@ -92,7 +92,7 @@ class LoginController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
         $userPublicId = $form->get('selectedUser')->getData();
-        return $this->redirectToRoute('instance_login', ['userPublicId' => $userPublicId]);
+        return $this->redirectToRoute('instance_login', ['domainProcessId' => $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'))['domainProcessId'] ]);
         //dd($userPublicId);
     }
 
