@@ -14,6 +14,17 @@
             No passwords, no hassle — just one tap to access.
         </p>
          <h2 data-domain-process-id-target="domainProcessId"></h2>
+<div class="form-placeholder">
+    {% if form is not null %}
+        {{ form_start(form) }}
+        {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
+        {% if form.oneTouchUsersHidden is defined %}
+            {{ form_row(form.oneTouchUsersHidden) }}
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Login</button>
+        {{ form_end(form) }}
+    {% endif %}
+</div>
 
         <div 
             data-controller="test"
@@ -33,7 +44,8 @@
     </section> 
 
 <script>
-console.log(userPublicId);
+//console.log(userPublicId);
+/**
     setInterval(function() {
         fetch("/user-login/check?processId={{ authentication['domainProcessId'] }}")
             .then(response => {
@@ -49,6 +61,7 @@ console.log(userPublicId);
                 console.error("Fetch failed:", error);
             });
     }, 2000);
+*/
 </script>
 
 {% endblock %}

@@ -60,5 +60,7 @@ connect() {
         localStorage.removeItem('jwt_token');        
         window.location.href = '/user-logout';
         console.log("redirection");
+        sessionStorage.removeItem('oneTouchUser');
+        sessionStorage.removeItem('currentUser');
     }    
 }

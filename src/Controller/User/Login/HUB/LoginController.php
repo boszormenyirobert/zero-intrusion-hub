@@ -9,12 +9,11 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Symfony\Component\Security\Csrf\CsrfToken;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\Cookie;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use App\DTO\RegistrationProcessDTO;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 class LoginController extends AbstractController
 {
@@ -28,24 +27,77 @@ class LoginController extends AbstractController
      * The userPublicId is optional and can be used to notify a specific user via firebase for auto login
      * Firebase notification is handled in the API 
      */
-    #[Route('/user-login', name: 'instance_login', methods: "GET")]
+    #[Route('/user-login', name: 'instance_login', methods: ["GET","POST"] )]
     public function login(
         CsrfTokenManagerInterface $csrfTokenManager, 
         Request $request
         ) {  
 
-        $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
-        
-        // Optional userPublicId for firebase auto login notification
-        $userPublicId = null;
-        if ($request->query->has('userPublicId')) {
-            $userPublicId = $request->query->get('userPublicId');
+    $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
+
+    $oneTouchUsers = [];
+    $form = null;
+
+    // 1️⃣ oneTouchUsers mindig POST-ból vagy hidden mezőből jön
+    if ($request->isMethod('POST')) {
+        if ($request->request->has('oneTouchUsers')) {
+            $oneTouchUsersJson = $request->request->get('oneTouchUsers');
+            $oneTouchUsers = json_decode($oneTouchUsersJson, true);
+        } elseif ($request->request->has('oneTouchUsersHidden')) {
+            $oneTouchUsersJson = $request->request->get('oneTouchUsersHidden');
+            $oneTouchUsers = json_decode($oneTouchUsersJson, true);
+        } elseif ($request->request->has('form')) {
+            $formData = $request->request->all('form');
+            if (isset($formData['oneTouchUsersHidden'])) {
+                $oneTouchUsers = json_decode($formData['oneTouchUsersHidden'], true) ?? [];
+            }
         }
+    }
+
+    // Dropdown choices előkészítése
+    $choices = [];
+    foreach ($oneTouchUsers as $user) {
+        if (isset($user['email'], $user['userPublicId'])) {
+            $choices[$user['email']] = $user['userPublicId'];
+        }
+    }
+
+    // 2️⃣ Form létrehozása mindig
+
+    $formBuilder = $this->createFormBuilder(null, [
+        'csrf_protection' => true,
+    ]);
+    $formBuilder
+        ->add('selectedUser', ChoiceType::class, [
+            'choices' => $choices,
+            'placeholder' => 'Select a user',
+            'required' => true,
+        ]);
+    // Hidden mező mindig legyen POST submitnál
+    $formBuilder->add('oneTouchUsersHidden', \Symfony\Component\Form\Extension\Core\Type\HiddenType::class, [
+        'data' => json_encode($oneTouchUsers),
+        'mapped' => false,
+    ]);
+    $form = $formBuilder->getForm();
+
+    // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
+    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {
+        dd($request->request->all());
+    }
+    $form->handleRequest($request);
+
+    // 4️⃣ Második POST: Twig form submit
+    $userPublicId = null;
+    if ($form->isSubmitted() && $form->isValid()) {
+        $userPublicId = $form->get('selectedUser')->getData();
+    }
 
         return $this->render('views/users/user-login.html.twig', [
             'authentication' => $this->userService->getQrCode('user_login', [],  $userPublicId),
             'userLoginCsrf' => $token,
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
+            'oneTouchUsers' => $oneTouchUsers,
+            'form' => $form->createView(),
         ]);
     }
 

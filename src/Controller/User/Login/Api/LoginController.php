@@ -14,7 +14,6 @@ use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\Cookie;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use App\DTO\RegistrationProcessDTO;
-use Symfony\Component\HttpFoundation\Response;
 
 class LoginController extends AbstractController
 {
