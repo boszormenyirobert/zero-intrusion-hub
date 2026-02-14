@@ -92,6 +92,7 @@ class LoginController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
         $userPublicId = $form->get('selectedUser')->getData();
+        return $this->redirectToRoute('instance_login', ['userPublicId' => $userPublicId]);
         //dd($userPublicId);
     }
 

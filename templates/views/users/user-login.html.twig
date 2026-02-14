@@ -56,7 +56,7 @@
 
 
 <script>
-var userPublicId = {% if userPublicId is defined and userPublicId is not null and userPublicId != '' %}'{{ userPublicId }}'{% else %}null{% endif %};
+const userPublicId = params.get('userPublicId');
 
 if(userPublicId) {
     setInterval(function() {
