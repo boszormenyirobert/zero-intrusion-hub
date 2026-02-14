@@ -83,8 +83,7 @@ class LoginController extends AbstractController
 
 
     // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
-    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {
-        dd($request->request->all());
+    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
          $userPublicId = $form->get('selectedUser')->getData();
     }
     $form->handleRequest($request);
