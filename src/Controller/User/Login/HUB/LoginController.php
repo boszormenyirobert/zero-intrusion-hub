@@ -79,11 +79,6 @@ class LoginController extends AbstractController
         'mapped' => false,
     ]);
     $form = $formBuilder->getForm();
-
-    // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
-    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {
-        dd($request->request->all());
-    }
     $form->handleRequest($request);
 
     // 4️⃣ Második POST: Twig form submit
@@ -98,6 +93,7 @@ class LoginController extends AbstractController
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
             'oneTouchUsers' => $oneTouchUsers,
             'form' => $form->createView(),
+            'userPublicId' => $userPublicId
         ]);
     }
 

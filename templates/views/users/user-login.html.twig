@@ -14,6 +14,9 @@
             No passwords, no hassle — just one tap to access.
         </p>
          <h2 data-domain-process-id-target="domainProcessId"></h2>
+
+         {{ dump(all)}}
+         
 <div class="form-placeholder">
     {% if form is not null %}
         {{ form_start(form) }}
@@ -44,8 +47,9 @@
     </section> 
 
 <script>
-//console.log(userPublicId);
+var userPublicId = {% if userPublicId is defined and userPublicId is not null and userPublicId != '' %}'{{ userPublicId }}'{% else %}null{% endif %};
 
+if(userPublicId) {
     setInterval(function() {
         fetch("/user-login/check?processId={{ authentication['domainProcessId'] }}")
             .then(response => {
@@ -61,7 +65,7 @@
                 console.error("Fetch failed:", error);
             });
     }, 2000);
-
+}
 </script>
 
 {% endblock %}
