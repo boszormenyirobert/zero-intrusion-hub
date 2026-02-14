@@ -51,14 +51,16 @@
             <p data-test-target="response"></p>
         </div>
         
-<h1>{{ userPublicId }}</h1>
     </section> 
 
 
 <script>
+userLoginPath = new URLSearchParams(window.location.search);
+domainProcessId = userLoginPath.get('domainProcessId');
+
 
     setInterval(function() {
-        fetch("/user-login/check?processId={{ authentication['domainProcessId'] }}")
+        fetch(`/user-login/check?processId=${domainProcessId}`)
             .then(response => {
                 if (!response.ok) throw new Error("Network error: " + response.status);
                 return response.json();
@@ -72,7 +74,7 @@
                 console.error("Fetch failed:", error);
             });
     }, 2000);
-}
+
 </script>
 
 {% endblock %}
