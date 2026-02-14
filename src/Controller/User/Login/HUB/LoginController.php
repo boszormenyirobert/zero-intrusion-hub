@@ -92,7 +92,7 @@ class LoginController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
         $userPublicId = $form->get('selectedUser')->getData();
-        dd($userPublicId);
+        //dd($userPublicId);
     }
 
         $response = $this->render('views/users/user-login.html.twig', [
