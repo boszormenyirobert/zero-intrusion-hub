@@ -152,7 +152,11 @@ class LoginController extends AbstractController
             $response->headers->setCookie($cookie);
 
             return $response;
-        }    
+        }
+
+        return $this->json([
+            'message' => 'Waiting for authentication.'
+        ], 200);
     }
 
     // Logout user and clear JWT cookie clicked on logout link
