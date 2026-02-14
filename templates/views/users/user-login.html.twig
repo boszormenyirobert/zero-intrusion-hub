@@ -17,17 +17,17 @@
 
         
 
-<div class="form-placeholder">
-    {% if form is not null %}
-        {{ form_start(form) }}
-        {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
-        {% if form.oneTouchUsersHidden is defined %}
-            {{ form_row(form.oneTouchUsersHidden) }}
-        {% endif %}
-        <button type="submit" class="btn btn-primary">Login</button>
-        {{ form_end(form) }}
-    {% endif %}
-</div>
+        <div class="form-placeholder">
+            {% if form is not null %}
+                {{ form_start(form) }}
+                {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
+                {% if form.oneTouchUsersHidden is defined %}
+                    {{ form_row(form.oneTouchUsersHidden) }}
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Login</button>
+                {{ form_end(form) }}
+            {% endif %}
+        </div>
 
         <div 
             data-controller="test"
@@ -43,8 +43,9 @@
             
             <p data-test-target="response"></p>
         </div>
-
+<h1>{{ userPublicId }}</h1>
     </section> 
+
 
 <script>
 var userPublicId = {% if userPublicId is defined and userPublicId is not null and userPublicId != '' %}'{{ userPublicId }}'{% else %}null{% endif %};
