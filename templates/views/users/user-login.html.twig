@@ -58,7 +58,7 @@
 userLoginPath = new URLSearchParams(window.location.search);
 domainProcessId = userLoginPath.get('domainProcessId');
 
-
+/**
     setInterval(function() {
         fetch(`/user-login/check?processId=${domainProcessId}`)
             .then(response => {
@@ -74,7 +74,7 @@ domainProcessId = userLoginPath.get('domainProcessId');
                 console.error("Fetch failed:", error);
             });
     }, 2000);
-
+*/
 </script>
 
 {% endblock %}
