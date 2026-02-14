@@ -56,10 +56,7 @@
 
 
 <script>
-userLoginPath = new URLSearchParams(window.location.search);
-userPublicId = userLoginPath.get('userPublicId');
 
-if(userPublicId) {
     setInterval(function() {
         fetch("/user-login/check?processId={{ authentication['domainProcessId'] }}")
             .then(response => {

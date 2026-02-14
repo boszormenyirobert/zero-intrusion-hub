@@ -97,7 +97,7 @@ class LoginController extends AbstractController
     }
 
         $response = $this->render('views/users/user-login.html.twig', [
-            'authentication' => $this->userService->getQrCode('user_login', [],  $userPublicId),
+            'authentication' => $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers')),
             'userLoginCsrf' => $token,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
             'oneTouchUsers' => $oneTouchUsers,
