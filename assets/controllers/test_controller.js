@@ -47,6 +47,7 @@ connect() {
                 localStorage.setItem('jwt_token', data.jwt_token);
             }
         this.responseTarget.textContent = data.message;
+        console.log(data);
         if(data.message === 'Authentication is success'){
             setTimeout(() => {
                 window.location.href = '/';
