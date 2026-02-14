@@ -31,15 +31,12 @@ connect() {
     }
 
     async check() {
-        const response = await fetch(this.checkUrlValue, {
+        const url = this.checkUrlValue + '?processId=' + encodeURIComponent(this.domainProcessIdValue);
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.userLoginCsrfValue
-            },
-            body: JSON.stringify({
-                domainProcessId: this.domainProcessIdValue
-            })
+            }
         });
 
         const data = await response.json();
