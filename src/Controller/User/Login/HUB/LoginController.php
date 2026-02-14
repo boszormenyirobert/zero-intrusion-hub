@@ -91,9 +91,10 @@ class LoginController extends AbstractController
     // 4️⃣ Második POST: Twig form submit
 
     if ($form->isSubmitted() && $form->isValid()) {
-        $userPublicId = $form->get('selectedUser')->getData();
-        return $this->redirectToRoute('instance_login', ['domainProcessId' => $this->userService->getQrCode('user_login', [], $userPublicId) ]);
-        //dd($userPublicId);
+        $data = $form->get('selectedUser')->getData();
+         $this->userService->getQrCode('user_login', [], $data) ;
+
+        return $this->redirectToRoute('instance_login', ['domainProcessId' =>$data]);       
     }
 
         $response = $this->render('views/users/user-login.html.twig', [
