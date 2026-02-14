@@ -32,7 +32,7 @@ connect() {
 
     async check() {
         const response = await fetch(this.checkUrlValue, {
-            method: 'POST',
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.userLoginCsrfValue
