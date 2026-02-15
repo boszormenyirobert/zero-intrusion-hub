@@ -92,8 +92,11 @@ class LoginController extends AbstractController
     $authentication = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
 
     if ($form->isSubmitted() && $form->isValid()) {
-        $data = $form->get('selectedUser')->getData();        
-        $this->userService->getQrCode('user_login', [],  $data);
+        $userPublicId = $form->get('selectedUser')->getData();        
+        // Send notification to selected user and redirect to login check route with processId
+        dd($userPublicId);
+        $this->userService->getQrCode('user_login', [],  $userPublicId);
+        // Redirect to login check route with processId by polling
         return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authentication['domainProcessId']]);       
     }
 
