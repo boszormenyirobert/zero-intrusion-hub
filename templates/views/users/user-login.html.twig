@@ -20,22 +20,20 @@
             Simply download the ZeroIntrusion app and scan the QR code — it's that easy.
             No passwords, no hassle — just one tap to access.
         </p>
-         <h2 data-domain-process-id-target="domainProcessId"></h2>
+         <h2 data-domain-process-id-target="domainProcessId"></h2>       
 
-        
-
-        <div class="form-placeholder">
-            {% if form is not null %}
-                {{ form_start(form) }}
-                {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
-                {% if form.oneTouchUsersHidden is defined %}
-                    {{ form_row(form.oneTouchUsersHidden) }}
+                {% set userChoices = form.selectedUser.vars.choices|filter(c => c.value is not empty) %}
+                {%  if form is not null and userChoices|length > 0 %}
+                        <div class="form-placeholder">
+                            {{ form_start(form) }}
+                            {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
+                            {% if form.oneTouchUsersHidden is defined %}
+                                {{ form_row(form.oneTouchUsersHidden) }}
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">Login</button>               
+                            {{ form_end(form) }}
+                        </div>
                 {% endif %}
-                <button type="submit" class="btn btn-primary">Login</button>               
-                {{ form_end(form) }}
-            {% endif %}
-        </div>
-
         <div 
             data-controller="test"
             data-test-check-url-value="{{ path('user_login_check') }}"
