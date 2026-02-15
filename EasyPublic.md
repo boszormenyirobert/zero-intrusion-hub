@@ -35,7 +35,7 @@ This controller handles the registration and authentication of corporate users o
 
 ### getSubscriptionData()
 
-- **Endpoint Called**: `EASYLOGIN_DOMAIN/SERVICE_REGISTRATION_PARTNER/IDENTITY`
+- **Endpoint Called**: `ZERO_INTRUSION_DOMAIN/SERVICE_REGISTRATION_PARTNER/IDENTITY`
 - **Headers Used**: `Authorization` (HMAC of encrypted data and IV)
 - **Returns**: Decrypted identity data (contract hash, revoke URL, etc.)
 
@@ -44,7 +44,7 @@ This controller handles the registration and authentication of corporate users o
 - **Data Sent**:
   - `revokeUrl`
   - `contractHash`
-- **Endpoint Called**: `EASYLOGIN_DOMAIN/SERVICE_REGISTRATION_PARTNER/REGISTRATION_NEW`
+- **Endpoint Called**: `ZERO_INTRUSION_DOMAIN/SERVICE_REGISTRATION_PARTNER/REGISTRATION_NEW`
 - **Headers**: HMAC Authorization, IV in JSON payload
 
 ---

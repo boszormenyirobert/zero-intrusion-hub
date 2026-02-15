@@ -99,11 +99,8 @@
                     <a href="/instance-registration-external">New domain registration</a>
                 {% endif %}
             </div> 
-        {% else %}
-        
-        <h2>You are not logged in, or invalid jwt token</h2>
-    {% endif %}
 
+        {% endif %}
     </section>
     {{dump(accounts)}}
 {% endblock %}

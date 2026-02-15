@@ -49,6 +49,8 @@ class LoginController extends AbstractController
         ): JsonResponse
     {
         $response = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $this->logger->critical('Login callback received', ['response' => $response]);
+
         $dto = RegistrationProcessDTO::mapFromArrayLogin($response);
 
         return new JsonResponse([

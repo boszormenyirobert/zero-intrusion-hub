@@ -4,7 +4,6 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    EASYLOGIN_DOMAIN: '%env(EASYLOGIN_DOMAIN)%'
     EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%env(EASYLOGIN_SERVICE_REGISTRATION_PARTNER)%'
     EASYLOGIN_SERVICE_IDENTITY: '%env(EASYLOGIN_SERVICE_IDENTITY)%'
     EASYLOGIN_SERVICE_REGISTRATION: '%env(EASYLOGIN_SERVICE_REGISTRATION)%'
@@ -50,7 +49,6 @@ services:
     App\Service\Corporate\SubscriptionService:
         arguments:
             session: '@session.session'
-            EASYLOGIN_DOMAIN: '%EASYLOGIN_DOMAIN%'
             EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%EASYLOGIN_SERVICE_REGISTRATION_PARTNER%'
             EASYLOGIN_SERVICE_IDENTITY: '%EASYLOGIN_SERVICE_IDENTITY%'
             EASYLOGIN_SERVICE_REGISTRATION: '%EASYLOGIN_SERVICE_REGISTRATION%'

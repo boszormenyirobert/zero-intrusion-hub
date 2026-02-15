@@ -62,55 +62,52 @@ class LoginController extends AbstractController
         }
     }
 
-    // 2️⃣ Form létrehozása mindig
+        // 2️⃣ Form létrehozása mindig
 
-    $formBuilder = $this->createFormBuilder(null, [
-        'csrf_protection' => true,
-    ]);
-    $formBuilder
-        ->add('selectedUser', ChoiceType::class, [
-            'choices' => $choices,
-            'placeholder' => 'Select a user',
-            'required' => true,
+        $formBuilder = $this->createFormBuilder(null, [
+            'csrf_protection' => true,
         ]);
-    // Hidden mező mindig legyen POST submitnál
-    $formBuilder->add('oneTouchUsersHidden', \Symfony\Component\Form\Extension\Core\Type\HiddenType::class, [
-        'data' => json_encode($oneTouchUsers),
-        'mapped' => false,
-    ]);
-    $form = $formBuilder->getForm();
-    $userPublicId = null;
+        $formBuilder
+            ->add('selectedUser', ChoiceType::class, [
+                'choices' => $choices,
+                'placeholder' => 'Select a user',
+                'required' => true,
+            ]);
+        // Hidden mező mindig legyen POST submitnál
+        $formBuilder->add('oneTouchUsersHidden', \Symfony\Component\Form\Extension\Core\Type\HiddenType::class, [
+            'data' => json_encode($oneTouchUsers),
+            'mapped' => false,
+        ]);
+        $form = $formBuilder->getForm();
+        $userPublicId = null;
 
 
-    // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
-    if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
-         $userPublicId = $form->get('selectedUser')->getData();
-    }
-    $form->handleRequest($request);
+        // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
+        if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
+            $userPublicId = $form->get('selectedUser')->getData();
+        }
+        $form->handleRequest($request);
 
-    // 4️⃣ Második POST: Twig form submit
-    $authentication = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
+        // 4️⃣ Második POST: Twig form submit
+        
+        $authenticationByDropDown ="";
+        if ($form->isSubmitted() && $form->isValid()) {
+            $userPublicId = $form->get('selectedUser')->getData();
+            // This send also the firebase notification to the user to auto login     
+            $authenticationByDropDown = $this->userService->getQrCode('user_login', [],  $userPublicId);       
+            return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authenticationByDropDown['domainProcessId']]);       
+        }
 
-    if ($form->isSubmitted() && $form->isValid()) {
-        $userPublicId = $form->get('selectedUser')->getData();        
-        // Send notification to selected user and redirect to login check route with processId       
-        $this->userService->getQrCode('user_login', [],  $userPublicId);
-        // Redirect to login check route with processId by polling
-        return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authentication['domainProcessId']]);       
-    }
-
+        $authenticationByQr = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
         $response = $this->render('views/users/user-login.html.twig', [
-            'authentication' => $authentication,
+            'authenticationByQr' => $authenticationByQr,
+            'authenticationByDropDown' => $authenticationByDropDown,
             'userLoginCsrf' => $token,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
             'oneTouchUsers' => $oneTouchUsers,
             'form' => $form->createView(),
             'userPublicId' => $userPublicId
         ]);
-
-        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
 
         return $response;
     }

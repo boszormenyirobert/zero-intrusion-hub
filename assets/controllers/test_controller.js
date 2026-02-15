@@ -45,7 +45,7 @@ connect() {
             }
         this.responseTarget.textContent = data.message;
         console.log(data);
-        if(data.message === 'Authentication is success'){
+        if(data.message === 'Authentication success.'){
             setTimeout(() => {
                 window.location.href = '/';
             }, 1000);            

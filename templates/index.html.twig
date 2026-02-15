@@ -38,11 +38,19 @@
 													</li>
 												{% endif %} 
 												<li>
-													<a href="/business">Business</a>									
+													{% if is_jwt_valid %}
+														<a href="/business">Business</a>
+													{% else %}
+														<a id="businessBtn" href="/business">Business</a>			
+													{% endif %}																			
 												</li>		
 												
 												<li>
-													<a href="/account">Account</a>									
+													{% if is_jwt_valid %}
+														<a href="/account">Account</a>
+													{% else %}
+														<a id="accountBtn" href="/account">Account</a>									
+													{% endif %}
 												</li>																								
 										</ul>
 									</nav>								
@@ -56,10 +64,47 @@
 			{% endblock %}
 		</div>
 		{% block javascript %}{% endblock %}
-
-		{% if userPublicId is defined %}
-			userPublicId = "{{ userPublicId|e('js') }}";		
-		{% endif %}
-
 	</body>
+
+	<script>
+		// Hide One Touch Activation button if loggedInUserName and loggedInUserPublicId are present in the localStorage - OneTouchUsers
+		 loggedInUserEmail = "{{ is_jwt_valid ? is_jwt_valid.username : '' }}";
+		 loggedInUserPublicId = "{{ is_jwt_valid ? is_jwt_valid.publicId : '' }}";
+		 oneTouchUsers = JSON.parse(localStorage.getItem("oneTouchUsers") || "[]");
+
+		oneTouchUsers.forEach(user => {
+			if(user.email === loggedInUserEmail && user.userPublicId === loggedInUserPublicId){
+				document.getElementById("oneTouchUserBtn").style.display = "none";
+			}
+		});
+
+
+		// Click on loginBtn || businessBtn => From get to post if oneTouchUsers are present in the localStorage
+		document.addEventListener('click', function(e) {
+			var loginBtn = document.getElementById("accountBtn");
+			var businessBtn = document.getElementById("businessBtn");
+
+				if ( (loginBtn && loginBtn.contains(e.target)) || (businessBtn && businessBtn.contains(e.target)) ) {	
+						
+				const oneTouchUsers = localStorage.getItem('oneTouchUsers');
+				if (oneTouchUsers) {
+					const form = document.createElement('form');
+					form.method = 'POST';
+					form.action = '/user-login';
+
+					const input = document.createElement('input');
+					input.type = 'hidden';
+					input.name = 'oneTouchUsers';
+					input.value = oneTouchUsers;
+
+					form.appendChild(input);
+					document.body.appendChild(form);
+					form.submit();
+				} else {
+					window.location.href = '/user-login';
+				}
+			}
+		});
+
+	</script>
 </html>

@@ -13,18 +13,29 @@ use App\Service\Corporate\SubscriptionService;
 use App\Form\BusinessRequesterType;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Form\IdentityRequesterType;
+use App\Repository\UserRepository;
+use App\Service\JWT\JwtService;
 
 class BusinessController extends AbstractController
 {
+    public function __construct(
+        private JWTEncoderInterface $jwtEncoder,
+        private UserRepository $userRepository,
+    ) {}
+
     #[JwtRequired]
     #[Route('/business', name: 'business_registration')]
     public function business(
     Request $request,
     SubscriptionService $subscriptionService,
-    JWTEncoderInterface $jwtEncoder
+    JWTEncoderInterface $jwtEncoder,
+    JwtService $jwtService
     ): Response 
     {   
 
+        $jwtToken = $jwtService->jwtValidation($request);
+
+        if($jwtToken && $user = $this->identifyUser($jwtToken)){
         $values = [
             'pswManager'    => 'psw_manager',
             'biometric'     => 'biometric',
@@ -52,10 +63,12 @@ class BusinessController extends AbstractController
                 return $this->redirect($this->generateUrl('account'));
             }
         }
+        }
 
         return $this->render(
             'views/corporate/business-services.html.twig',
             [
+                'is_jwt_valid' => $jwtToken,
                 'form_psw_manager' => $forms['pswManager']->createView(),
                 'form_biometric' => $forms['biometric']->createView(),
                 'form_business_basic' => $forms['businessBasic']->createView(),
@@ -65,5 +78,20 @@ class BusinessController extends AbstractController
                 'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
             ]
         );
+    }
+
+        private function identifyUser($jwtToken){
+        $userData = $this->userRepository->findOneBy([
+            'email' => $jwtToken['username']
+        ]);
+
+        if($userData){
+            return [
+                'publicId' => $userData->getPublicId(),
+                'email' => $userData->getEmail()
+            ];
+        }
+
+        return false;
     }
 }

@@ -32,19 +32,8 @@
                     {{ form_row(form.oneTouchUsersHidden) }}
                 {% endif %}
                 <button type="submit" class="btn btn-primary">Login</button>
+                <h2>Process ID: {{ app.request.get('domainProcessId') }}</h2>    
                 {{ form_end(form) }}
-
-                        <div 
-                            data-controller="test"
-                            data-test-check-url-value="{{ path('user_login_check') }}"                            
-                            data-test-domain-process-id-value="{{ app.request.get('domainProcessId') }}" 
-                            data-test-user-login-csrf-value="{{ userLoginCsrf }}"
-                        >                            
-                            <button data-action="click->test#check">Login after select user</button>
-                            
-                            <p data-test-target="response"></p>
-                        </div>
-
             {% endif %}
         </div>
 
@@ -52,10 +41,10 @@
             data-controller="test"
             data-test-check-url-value="{{ path('user_login_check') }}"
             data-test-renew-url-value="{{ path('user_login_new_qr') }}"
-            data-test-domain-process-id-value="{{ authentication['domainProcessId'] }}"
+            data-test-domain-process-id-value="{{ authenticationByQr['domainProcessId'] }}"
             data-test-user-login-csrf-value="{{ userLoginCsrf }}"
         >
-            <img style="display: block; margin: auto;" data-test-target="qrCode" src="data:image/png;base64,{{ authentication['qrCode'] }}" alt="QR Code">
+            <img style="display: block; margin: auto;" data-test-target="qrCode" src="data:image/png;base64,{{ authenticationByQr['qrCode'] }}" alt="QR Code">
             
             <button data-action="click->test#renew">Renew</button>
             <button data-action="click->test#check">Login after QR-Scan</button>
@@ -71,22 +60,25 @@ userLoginPath = new URLSearchParams(window.location.search);
 domainProcessId = userLoginPath.get('domainProcessId');
 
 /**
+ *  Polling every 2 seconds to check if the user has authenticated successfully.
+ */ 
+if(domainProcessId){
     setInterval(function() {
-        fetch(`/user-login/check?processId=${domainProcessId}`)
-            .then(response => {
-                if (!response.ok) throw new Error("Network error: " + response.status);
-                return response.json();
-            })
-            .then(data => {                
-                if (data.message === "Authentication success.") {
-                    window.location.href = "/";
-                }                
-            })
-            .catch(error => {
-                console.error("Fetch failed:", error);
-            });
-    }, 2000);
-*/
+            fetch(`/user-login/check?processId=${domainProcessId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Network error: " + response.status);
+                    return response.json();
+                })
+                .then(data => {                
+                    if (data.message === "Authentication success.") {
+                        window.location.href = "/";
+                    }                
+                })
+                .catch(error => {
+                    console.error("Fetch failed:", error);
+                });
+        }, 2000);
+}
 </script>
 
 {% endblock %}
