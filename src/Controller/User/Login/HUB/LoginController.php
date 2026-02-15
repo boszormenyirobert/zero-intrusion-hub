@@ -33,36 +33,34 @@ class LoginController extends AbstractController
         Request $request
         ) {  
 
-    $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
+        $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
 
-    $oneTouchUsers = [];
-    $form = null;
+        $oneTouchUsers = [];
+        $form = null;
 
-    // 1️⃣ oneTouchUsers mindig POST-ból vagy hidden mezőből jön
-    if ($request->isMethod('POST')) {
-        if ($request->request->has('oneTouchUsers')) {
-            $oneTouchUsersJson = $request->request->get('oneTouchUsers');
-            $oneTouchUsers = json_decode($oneTouchUsersJson, true);
-        } elseif ($request->request->has('oneTouchUsersHidden')) {
-            $oneTouchUsersJson = $request->request->get('oneTouchUsersHidden');
-            $oneTouchUsers = json_decode($oneTouchUsersJson, true);
-        } elseif ($request->request->has('form')) {
-            $formData = $request->request->all('form');
-            if (isset($formData['oneTouchUsersHidden'])) {
-                $oneTouchUsers = json_decode($formData['oneTouchUsersHidden'], true) ?? [];
+        // oneTouchUsers
+        if ($request->isMethod('POST')) {
+            if ($request->request->has('oneTouchUsers')) {
+                $oneTouchUsersJson = $request->request->get('oneTouchUsers');
+                $oneTouchUsers = json_decode($oneTouchUsersJson, true);
+            } elseif ($request->request->has('oneTouchUsersHidden')) {
+                $oneTouchUsersJson = $request->request->get('oneTouchUsersHidden');
+                $oneTouchUsers = json_decode($oneTouchUsersJson, true);
+            } elseif ($request->request->has('form')) {
+                $formData = $request->request->all('form');
+                if (isset($formData['oneTouchUsersHidden'])) {
+                    $oneTouchUsers = json_decode($formData['oneTouchUsersHidden'], true) ?? [];
+                }
             }
         }
-    }
 
-    // Dropdown choices előkészítése
-    $choices = [];
-    foreach ($oneTouchUsers as $user) {
-        if (isset($user['email'], $user['userPublicId'])) {
-            $choices[$user['email']] = $user['userPublicId'];
+        // Dropdown choices preparation from oneTouchUsers
+        $choices = [];
+        foreach ($oneTouchUsers as $user) {
+            if (isset($user['email'], $user['userPublicId'])) {
+                $choices[$user['email']] = $user['userPublicId'];
+            }
         }
-    }
-
-        // 2️⃣ Form létrehozása mindig
 
         $formBuilder = $this->createFormBuilder(null, [
             'csrf_protection' => true,
@@ -73,7 +71,8 @@ class LoginController extends AbstractController
                 'placeholder' => 'Select a user',
                 'required' => true,
             ]);
-        // Hidden mező mindig legyen POST submitnál
+
+        // Hidden field always by POST request to keep the oneTouchUsers data for the second POST when the dropdown form is submitted
         $formBuilder->add('oneTouchUsersHidden', \Symfony\Component\Form\Extension\Core\Type\HiddenType::class, [
             'data' => json_encode($oneTouchUsers),
             'mapped' => false,
@@ -82,18 +81,17 @@ class LoginController extends AbstractController
         $userPublicId = null;
 
 
-        // 3️⃣ Handle request előtt: csak akkor dd, ha form submit (selectedUser is van)
+        // First POST
         if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
             $userPublicId = $form->get('selectedUser')->getData();
         }
         $form->handleRequest($request);
 
-        // 4️⃣ Második POST: Twig form submit
-        
+        // Second POST: Twig form submit        
         $authenticationByDropDown ="";
         if ($form->isSubmitted() && $form->isValid()) {
             $userPublicId = $form->get('selectedUser')->getData();
-            // This send also the firebase notification to the user to auto login     
+            // This send also the firebase notification to the user to auto login(From API) if the userPublicId is present
             $authenticationByDropDown = $this->userService->getQrCode('user_login', [],  $userPublicId);       
             return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authenticationByDropDown['domainProcessId']]);       
         }

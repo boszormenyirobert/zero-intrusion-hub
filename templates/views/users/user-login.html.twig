@@ -31,8 +31,7 @@
                 {% if form.oneTouchUsersHidden is defined %}
                     {{ form_row(form.oneTouchUsersHidden) }}
                 {% endif %}
-                <button type="submit" class="btn btn-primary">Login</button>
-                <h2>Process ID: {{ app.request.get('domainProcessId') }}</h2>    
+                <button type="submit" class="btn btn-primary">Login</button>               
                 {{ form_end(form) }}
             {% endif %}
         </div>
