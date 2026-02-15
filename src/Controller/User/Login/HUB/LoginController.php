@@ -93,8 +93,7 @@ class LoginController extends AbstractController
 
     if ($form->isSubmitted() && $form->isValid()) {
         $userPublicId = $form->get('selectedUser')->getData();        
-        // Send notification to selected user and redirect to login check route with processId
-        dd($userPublicId);
+        // Send notification to selected user and redirect to login check route with processId       
         $this->userService->getQrCode('user_login', [],  $userPublicId);
         // Redirect to login check route with processId by polling
         return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authentication['domainProcessId']]);       
