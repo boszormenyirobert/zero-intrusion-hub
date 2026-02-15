@@ -89,16 +89,16 @@ class LoginController extends AbstractController
     $form->handleRequest($request);
 
     // 4️⃣ Második POST: Twig form submit
-
+    $authentication = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
     if ($form->isSubmitted() && $form->isValid()) {
         $data = $form->get('selectedUser')->getData();
          $this->userService->getQrCode('user_login', [], $data) ;
 
-        return $this->redirectToRoute('instance_login', ['domainProcessId' =>$data]);       
+        return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authentication['domainProcessId']]);       
     }
 
         $response = $this->render('views/users/user-login.html.twig', [
-            'authentication' => $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers')),
+            'authentication' => $authentication,
             'userLoginCsrf' => $token,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
             'oneTouchUsers' => $oneTouchUsers,
