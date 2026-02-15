@@ -158,7 +158,8 @@ class LoginController extends AbstractController
         }
 
         return $this->json([
-            'message' => 'Waiting for authentication.'
+            'message' => 'Waiting for authentication.',
+            'error' => $user
         ], 200);
     }
 
