@@ -37,7 +37,7 @@
                         <div 
                             data-controller="test"
                             data-test-check-url-value="{{ path('user_login_check') }}"                            
-                            data-test-domain-process-id-value="{{ app.request.get('domainProcessId', authentication['domainProcessId']) }}" 
+                            data-test-domain-process-id-value="{{ app.request.get('domainProcessId') }}" 
                             data-test-user-login-csrf-value="{{ userLoginCsrf }}"
                         >                            
                             <button data-action="click->test#check">Login after select user</button>
