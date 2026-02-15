@@ -159,7 +159,7 @@ class LoginController extends AbstractController
 
         return $this->json([
             'message' => 'Waiting for authentication.',
-            'error' => $user
+            'processId' => $processId
         ], 200);
     }
 
