@@ -33,6 +33,18 @@
                 {% endif %}
                 <button type="submit" class="btn btn-primary">Login</button>
                 {{ form_end(form) }}
+
+                        <div 
+                            data-controller="test"
+                            data-test-check-url-value="{{ path('user_login_check') }}"                            
+                            data-test-domain-process-id-value="{{ app.request.get('domainProcessId', authentication['domainProcessId']) }}" 
+                            data-test-user-login-csrf-value="{{ userLoginCsrf }}"
+                        >                            
+                            <button data-action="click->test#check">Login after select user</button>
+                            
+                            <p data-test-target="response"></p>
+                        </div>
+
             {% endif %}
         </div>
 
@@ -46,7 +58,7 @@
             <img style="display: block; margin: auto;" data-test-target="qrCode" src="data:image/png;base64,{{ authentication['qrCode'] }}" alt="QR Code">
             
             <button data-action="click->test#renew">Renew</button>
-            <button data-action="click->test#check">Login</button>
+            <button data-action="click->test#check">Login after QR-Scan</button>
             
             <p data-test-target="response"></p>
         </div>
