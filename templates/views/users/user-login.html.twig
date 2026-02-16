@@ -26,11 +26,11 @@
                 {%  if form is not null and userChoices|length > 0 %}
                         <div class="form-placeholder">
                             {{ form_start(form) }}
-                            {{ form_row(form.selectedUser, {'attr': {'required': 'required'}}) }}
+                            {{ form_row(form.selectedUser, {'attr': {'required': 'required', 'onchange': 'this.form.submit();'}}) }}
                             {% if form.oneTouchUsersHidden is defined %}
                                 {{ form_row(form.oneTouchUsersHidden) }}
                             {% endif %}
-                            <button type="submit" class="btn btn-primary">Login</button>               
+                            <button type="submit" class="btn btn-primary" style="display:none">Login</button>               
                             {{ form_end(form) }}
                         </div>
                 {% endif %}
@@ -42,10 +42,7 @@
             data-test-user-login-csrf-value="{{ userLoginCsrf }}"
         >
             <img style="display: block; margin: auto;" data-test-target="qrCode" src="data:image/png;base64,{{ authenticationByQr['qrCode'] }}" alt="QR Code">
-            
             <button data-action="click->test#renew">Renew</button>
-            <button data-action="click->test#check">Login after QR-Scan</button>
-            
             <p data-test-target="response"></p>
         </div>
         
@@ -76,6 +73,23 @@ if(domainProcessId){
                 });
         }, 2000);
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const controllerElement = document.querySelector('[data-controller="test"]');
+        if (controllerElement && controllerElement.controller) {
+            controllerElement.controller.check();
+        } else if (window.application && window.application.getControllerForElementAndIdentifier) {
+            // For Stimulus 3+ compatibility
+            const controller = window.application.getControllerForElementAndIdentifier(controllerElement, 'test');
+            if (controller && controller.check) {
+                controller.check();
+            }
+        }
+    }, 4000);
+});
 </script>
 
 {% endblock %}

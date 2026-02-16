@@ -10,7 +10,21 @@ export default class extends Controller {
 
     static targets = ['qrCode', 'response']
 connect() {
-  console.log('Controller connected');
+    console.log('Controller connected');
+    const params = new URLSearchParams(window.location.search);
+    const processIdFromUrl = params.get('domainProcessId');
+    if (processIdFromUrl) {
+        this.domainProcessIdValue = processIdFromUrl;
+    }
+    if (this.domainProcessIdValue) {
+        this.pollingInterval = setInterval(() => {
+            this.check();
+        }, 2000);
+        // Call check() once after 4 seconds
+        setTimeout(() => {
+            this.check();
+        }, 4000);
+    }
 }
     async renew() {
         const response = await fetch(this.renewUrlValue, {
