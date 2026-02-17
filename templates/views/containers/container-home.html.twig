@@ -4,7 +4,7 @@
 {% endblock %}
 
 {% block body %}
-
+{% if is_jwt_valid  %}
 	{{include('partials/why.html.twig')}}
 	{{include('partials/innovative.html.twig')}}
 	{{include('partials/integration-overview.html.twig')}}
@@ -12,5 +12,5 @@
 
 	{{ include('partials/big.html.twig') }}
 	{{include('partials/how-to-subscribe.html.twig')}}
-
+{% endif %}
 {% endblock %}
