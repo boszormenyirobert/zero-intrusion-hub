@@ -36,33 +36,33 @@ class BusinessController extends AbstractController
         $jwtToken = $jwtService->jwtValidation($request);
 
         if($jwtToken && $user = $this->identifyUser($jwtToken)){
-        $values = [
-            'pswManager'    => 'psw_manager',
-            'biometric'     => 'biometric',
-            'businessBasic' => 'business_basic', 
-            'businessPlus' => 'business_plus', 
-            'businessPro' => 'business_pro'
-        ];
+            $values = [
+                'pswManager'    => 'psw_manager',
+                'biometric'     => 'biometric',
+                'businessBasic' => 'business_basic', 
+                'businessPlus' => 'business_plus', 
+                'businessPro' => 'business_pro'
+            ];
 
-        $forms = [];
-        foreach ($values as $key => $val) {
-            $forms[$key] = $this->createForm(BusinessRequesterType::class, ['businessModel' => $key], ['csrf_token_id' => $val]);
-            $forms[$key]->handleRequest($request);
-        }
-
-        $process = "business_create";
-        $subscriptionData = null;
-        foreach ($forms as $form) {
-            if ($form->isSubmitted() && $form->isValid()) {
-                $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';   
-                $jwt_token = $jwtEncoder->decode($jwtTokenEncoded);
-
-                $validatedInput = $form->getData();
-                $subscriptionData = $subscriptionService->getSubscriptionData($process, $validatedInput['businessModel'],'external', $jwt_token['publicId']);
-                
-                return $this->redirect($this->generateUrl('account'));
+            $forms = [];
+            foreach ($values as $key => $val) {
+                $forms[$key] = $this->createForm(BusinessRequesterType::class, ['businessModel' => $key], ['csrf_token_id' => $val]);
+                $forms[$key]->handleRequest($request);
             }
-        }
+
+            $process = "business_create";
+            $subscriptionData = null;
+            foreach ($forms as $form) {
+                if ($form->isSubmitted() && $form->isValid()) {
+                    $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';   
+                    $jwt_token = $jwtEncoder->decode($jwtTokenEncoded);
+
+                    $validatedInput = $form->getData();
+                    $subscriptionData = $subscriptionService->getSubscriptionData($process, $validatedInput['businessModel'],'external', $jwt_token['publicId']);
+                    
+                    return $this->redirect($this->generateUrl('account'));
+                }
+            }
         }
 
         return $this->render(

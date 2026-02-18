@@ -6,7 +6,7 @@
 
 
 {% block body %}
-	{% if service_auth_data is empty %}
+	{% if service_auth_data is empty and is_jwt_valid %}
 		<section class="section">
 		<h2>Password Manager</h2>
 		<p>Password Manager for one business unit with unlimited users.</p>
