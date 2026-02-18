@@ -38,3 +38,4 @@ chmod 600 config/jwt/private.pem     chown www-data:www-data
 
 In case of zero-intrusion-demo-page... use the same ip with different port, than copy the private.pem and public.pem from
 this installation. In other case create new.
+----
