@@ -46,6 +46,7 @@ services:
     App\EventListener\JwtCreatedListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+            
     App\Service\Corporate\SubscriptionService:
         arguments:
             session: '@session.session'
