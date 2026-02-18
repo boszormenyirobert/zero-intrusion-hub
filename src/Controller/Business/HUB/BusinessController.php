@@ -69,11 +69,11 @@ class BusinessController extends AbstractController
             'views/corporate/business-services.html.twig',
             [
                 'is_jwt_valid' => $jwtToken,
-                'form_psw_manager' => $forms['pswManager']->createView(),
-                'form_biometric' => $forms['biometric']->createView(),
-                'form_business_basic' => $forms['businessBasic']->createView(),
-                'form_business_plus' => $forms['businessPlus']->createView(),
-                'form_business_pro' => $forms['businessPro']->createView(),
+                'form_psw_manager' =>  $jwtToken ? $forms['pswManager']->createView() : "",
+                'form_biometric' => $jwtToken ? $forms['biometric']->createView() : "",
+                'form_business_basic' => $jwtToken ? $forms['businessBasic']->createView() : "",
+                'form_business_plus' => $jwtToken ? $forms['businessPlus']->createView() : "",
+                'form_business_pro' => $jwtToken ? $forms['businessPro']->createView() : "",
                 'service_auth_data' => $subscriptionData,
                 'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
             ]
