@@ -74,7 +74,7 @@ class BusinessController extends AbstractController
                 'form_business_basic' => $jwtToken ? $forms['businessBasic']->createView() : "",
                 'form_business_plus' => $jwtToken ? $forms['businessPlus']->createView() : "",
                 'form_business_pro' => $jwtToken ? $forms['businessPro']->createView() : "",
-                'service_auth_data' => $subscriptionData,
+                'service_auth_data' => $jwtToken ? $subscriptionData : null,
                 'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
             ]
         );
