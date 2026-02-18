@@ -40,6 +40,7 @@ class SecureDeviceController extends AbstractController
         $userPublicId = null;
         $userEmail = null;
 
+        dd($request->cookies->all());
         $payload = $jwtService->jwtValidation($request);
          
         if($payload){                   
