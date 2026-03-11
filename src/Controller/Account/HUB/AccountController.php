@@ -1,7 +1,6 @@
 <?php
 /**
- * Handling an registrated Corporate account
- * 
+ * Fetches account data
  */
 namespace App\Controller\Account\HUB;
 
@@ -21,6 +20,13 @@ class AccountController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
+    /**
+     * Handles authenticated business account requests.
+     * Validates JWT and identifies user by email.
+     * Fetches business subscription/account data from backend and decodes the response.
+     * Renders the account view with subscription and account info.
+     * If JWT is invalid or user not found, redirects to login (used only once by HUB initialization).
+     */
     #[Route('/account', name: 'account')]
     public function business(
         Request $request,

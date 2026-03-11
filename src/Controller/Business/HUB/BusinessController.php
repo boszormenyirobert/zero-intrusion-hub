@@ -1,6 +1,6 @@
 <?php
 /**
- * HUB VIEW with API call
+ * HUB VIEW: Fetches business subscription data from backend and decodes the response
  */
 namespace App\Controller\Business\HUB;
 
@@ -23,6 +23,13 @@ class BusinessController extends AbstractController
         private UserRepository $userRepository,
     ) {}
 
+    /**
+     * Handles authenticated business registration requests.
+     * Validates JWT and identifies user by email.
+     * Fetches business subscription/account data from backend and decodes the response.
+     * Renders the business registration view with subscription and account info.
+     * Redirects to login if JWT is invalid or user not found.
+     */
     #[JwtRequired]
     #[Route('/business', name: 'business_registration')]
     public function business(
