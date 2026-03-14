@@ -1,5 +1,14 @@
 <?php
-
+/**
+ * Handles user login and logout processes via the HUB frontend.
+ *
+ * Responsibilities:
+ * - Generates QR codes for login and supports optional userPublicId for auto-login via Firebase.
+ * - Provides a dropdown-based one-touch login selection for multiple users.
+ * - Polls the database to confirm login status via JavaScript.
+ * - Logs out users and clears JWT cookies.
+ * - Manages CSRF token validation for secure login workflows.
+ */
 namespace App\Controller\User\Login\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,11 +31,11 @@ class LoginController extends AbstractController
         private UserService $userService
     ) {}
 
-    /**
-     * Called from the HUB FE to get a QR code for login
-     * The userPublicId is optional and can be used to notify a specific user via firebase for auto login
-     * Firebase notification is handled in the API 
-     */
+    /*
+    * API endpoint called from the HUB frontend to generate a QR code for login.
+    * The userPublicId is optional and can be used to notify a specific user via Firebase for auto-login.
+    * Firebase notification is handled by the API.
+    */
     #[Route('/user-login', name: 'instance_login', methods: ["GET","POST"] )]
     public function login(
         CsrfTokenManagerInterface $csrfTokenManager, 
@@ -110,7 +119,9 @@ class LoginController extends AbstractController
         return $response;
     }
 
-    // Pollling database to check if user confirmed the login via JS
+    /*
+    * Polls the database to check if the user has confirmed the login via JavaScript.
+    */
     #[Route('/user-login/check', name: 'user_login_check', methods: "GET")]
     public function userJSCheck(
         Request $request,
@@ -158,7 +169,9 @@ class LoginController extends AbstractController
         ], 200);
     }
 
-    // Logout user and clear JWT cookie clicked on logout link
+    /*
+    * Logs out the user and clears the JWT cookie when the logout link is clicked.
+    */
     #[Route('/user-logout', name: 'instance_logout', methods: "GET")]
     public function logout(CsrfTokenManagerInterface $csrfTokenManager) {       
         $csrfTokenManager->removeToken('userLoginCsrf');

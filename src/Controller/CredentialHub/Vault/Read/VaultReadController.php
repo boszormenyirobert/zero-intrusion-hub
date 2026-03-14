@@ -9,7 +9,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
-
+use App\Controller\CredentialHub\BackendForwared;
 
 /**
  * Vault read flow:
@@ -44,18 +44,7 @@ class VaultReadController extends AbstractController
         UserRegistrationService $userRegistrationService,
         Request $request
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_read_qr_identity";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [$process => json_decode($contentJson)]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_read_qr_identity', false, true);
     }
 
     /*
@@ -70,22 +59,7 @@ class VaultReadController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-
-        $process = "vault_read_credential_encrypted";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => json_decode($contentJson),
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-        $this->logger->critical('Vault Read Credential Encrypted Response', ['response' => $decodedJson]);
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_read_credential_encrypted',true, true);
     }
 
     /*
@@ -99,21 +73,7 @@ class VaultReadController extends AbstractController
         UserRegistrationService $userRegistrationService,
         Request $request
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_read_credential";        
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_read_credential',true);
     }    
 
     /*
@@ -127,20 +87,6 @@ class VaultReadController extends AbstractController
         UserRegistrationService $userRegistrationService,
         Request $request
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_read_state";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_read_state',true);
     }    
 }

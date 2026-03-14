@@ -1,22 +1,22 @@
 <?php
 
+/**
+ * Handles NFC-related API endpoints for device management.
+ * - Provides Desktop Application endpoints to fetch all NFC users.
+ * - Handles decryption of NFC card data and prepares it for QR code generation.
+ * - Forwards requests to the backend via the ForwardingService (formerly UserRegistrationService).
+ * - Ensures request data integrity using client authentication headers (HMAC).
+ */
 namespace App\Controller\DeviceManagement\Nfc\Api;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Controller\User\UserService;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Symfony\Component\Security\Csrf\CsrfToken;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\Cookie;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use App\DTO\RegistrationProcessDTO;
 use Symfony\Component\HttpFoundation\Response;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use App\Service\JWT\JwtService;
 use App\Service\User\UserRegistrationService;
 
 class NfcController extends AbstractController
@@ -25,18 +25,16 @@ class NfcController extends AbstractController
         private LoggerInterface $logger,
         private JWTEncoderInterface $jwtEncoder,
         private UserService $userService,
-        JwtService $jwtService,
         private UserRepository $userRepository,
     ) {}
 
-    /**
-     * Used by the Desktop Application to fetch all NFC users
-     * On the Desktop Application the encrypted NFC data will be written on the NFC card by the selected user
-     */
+    /*
+    * API endpoint used by the Desktop Application to fetch all NFC users.
+    * The encrypted NFC data from the selected user will be written onto the NFC card by the Desktop Application.
+    */
     #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
     public function getNfcUsers(
         Request $request,
-        JwtService $jwtService,
         UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
         ) {
             $headers =  $request->headers->all();
@@ -58,14 +56,13 @@ class NfcController extends AbstractController
         return $this->json($response);
     }
 
-    /**
-     * Used by the Desktop Application to decrypt the NFC card data read from the NFC card
-     * On the Desktop Application the encrypted NFC data will be generated as a QR code
-     */    
+    /*
+    * API endpoint used by the Desktop Application to decrypt NFC card data read from the card.
+    * The decrypted NFC data will be generated as a QR code on the Desktop Application.
+    */  
     #[Route('/api/nfc/decrypt', name: 'api_nfc_decrypt', methods: "POST")]
     public function NfcDecryptCardData(
         Request $request,
-        JwtService $jwtService,
         UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
         ) {
             $headers =  $request->headers->all();

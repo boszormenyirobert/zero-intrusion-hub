@@ -1,5 +1,13 @@
 <?php
-
+/*
+ * HUB instance
+ * Task:
+ * 1. HUB own Instance Registration with 2 steps: request identity and finalize registration.
+ *  - /instance-registration
+ *  - /instance-registration-follow-up
+ * 2. External Domain-Instance Registration with 2 steps: request identity and finalize registration.
+ *  - /instance-registration-external
+ */
 namespace App\Controller\Instance\HUB;
 
 use App\Form\IdentityRequesterType;
@@ -10,7 +18,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Service\Corporate\SubscriptionService;
 use App\Form\CorporateType;
 use Psr\Log\LoggerInterface;
-use App\Attribute\JwtRequired;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
@@ -21,12 +28,18 @@ class RegistrationController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-  //  #[JwtRequired]
+    /*
+    * Home page for the HUB instance, shows the Instance Registration process if the .env variable 
+    * ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION is set to true.   
+    * If JWT token is present in cookies, decodes it to check if it's valid and passes this info to the template.
+    *
+    * This is the first step of the Instance Registration process, where the user can request an identity for their HUB instance
+    */
     #[Route('/instance-registration', name: 'instance_registration')]
     public function instanceRegistration(
         Request $request,
         SubscriptionService $subscriptionService,
-    JWTEncoderInterface $jwtEncoder
+        JWTEncoderInterface $jwtEncoder
     ): Response
     {
         $formIdentity = $this->createForm(IdentityRequesterType::class);
@@ -36,9 +49,7 @@ class RegistrationController extends AbstractController
         $businessModel = 'businessPro';
 
         if ($formIdentity->isSubmitted() && $formIdentity->isValid()) {
-            // $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';   
-            // $jwt_token = $jwtEncoder->decode($jwtTokenEncoded);
-        
+       
             $publicId = $this->params->get('INSTALLATION_PUBLIC_ID');
             $this->logger->critical('PublicId for instance registration', ['publicId' => $publicId]);   
 
@@ -53,6 +64,13 @@ class RegistrationController extends AbstractController
         ]);
     }    
     
+    /*
+    * Domaine-Instance registration process for external domain
+    * The user get the identity for their Domaine-Instance and then can finalize the registration with the follow-up step.
+    * The get: corporateIdKey, corporateIdSecret, iv, corporateId and sslPublicKey
+    * Through the form data: "domain, callback user login and callback user registration " the user can finalize the registration of 
+    * their domain instance in the follow-up step
+    */
     #[Route('/instance-registration-external', name: 'instance_registration_external')]
     public function instanceRegistrationExternal(
         Request $request,
@@ -82,7 +100,10 @@ class RegistrationController extends AbstractController
         ]);
     }        
 
-//    #[JwtRequired]    
+    /**
+     * Follow-up step for the Instance Registration process, where the user can finalize their HUB instance registration.
+     * This step is only accessible if the initial registration step has been completed.
+     */
     #[Route('/instance-registration-follow-up', name: 'instance_registration_follow_up')]
     public function instanceRegistrationFollowUp(
         Request $request,

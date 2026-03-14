@@ -3,12 +3,12 @@
 namespace App\Controller\CredentialHub\Vault\Delete;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
+use App\Controller\CredentialHub\BackendForwared;
 
 /**
  * Vault delete flow:
@@ -38,18 +38,7 @@ class VaultDeleteController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_delete_qr_identity";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [$process => $contentJson]
-        );
-        
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_delete_qr_identity');
     }
 
     /*
@@ -64,25 +53,11 @@ class VaultDeleteController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_delete_credential";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_delete_credential', true);
     }    
 
     /**
-     * API endpoint for domain deletion state polling (called by Browser-Extension).
+     * API endpoint for vault deletion state polling (called by Browser-Extension).
      * Receives state request data and extension auth header, forwards securely to backend.
      * Uses UserRegistrationService->forwardRegistration, which encrypts and sends data to backend API.
      * Backend response is decoded and returned as JSON.
@@ -92,20 +67,6 @@ class VaultDeleteController extends AbstractController
         UserRegistrationService $userRegistrationService,
         Request $request
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "vault_delete_state";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'vault_delete_state', true);
     }    
 }

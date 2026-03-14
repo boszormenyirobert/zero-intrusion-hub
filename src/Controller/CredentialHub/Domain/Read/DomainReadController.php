@@ -3,13 +3,13 @@
 namespace App\Controller\CredentialHub\Domain\Read;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
-
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Controller\CredentialHub\BackendForwared;
 
 /**
  * Domain read flow:
@@ -33,7 +33,6 @@ class DomainReadController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-
     /*
      * API endpoint for QR-based domain read (called by Browser-Extension).
      * Requesting an QR-code from the API. Only initial step to get the sessionId.(API => save in Saved in the AuthBridge table)
@@ -45,18 +44,7 @@ class DomainReadController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "domain_read_qr_identity";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [$process => json_decode($contentJson)]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-        
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'domain_read_qr_identity', false, true);
     }
 
     /*
@@ -71,21 +59,7 @@ class DomainReadController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-
-        $process = "domain_read_credential_encrypted";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => json_decode($contentJson),
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-                ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'domain_read_credential_encrypted', true, true);
     }  
 
     /*
@@ -99,27 +73,10 @@ class DomainReadController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-
-        $process = "domain_read_credential";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => json_decode($contentJson),
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-                ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'domain_read_credential', true, true);
     }
 
- 
-
-    /*
+     /*
      * API endpoint for domain read state polling (called by Browser-Extension).
      * Receives state request data and extension auth header, forwards to backend API.
      * Uses UserRegistrationService->forwardRegistration, which encrypts and sends data to backend API.
@@ -128,23 +85,9 @@ class DomainReadController extends AbstractController
     #[Route('/state', name: 'domain_read_state', methods: "POST")]
     public function domainReadState(
         UserRegistrationService $userRegistrationService,
-        Request $request
+        Request $request,
+        ValidatorInterface $validator
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "domain_read_state";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-       
-        
-       return new JsonResponse($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'domain_read_state', true);
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Identity => Describe an USER, USER DEVICE
- * Device Registration Process => Start with the Mobile-Application installation finish with user-email and phone-number
+ * Identity module: describes a USER and their DEVICE.
+ * Device Registration Process: starts with Mobile-Application installation and finishes with collecting user email and phone number.
  */
 namespace App\Controller\DeviceManagement\Identity\Api;
 
@@ -22,11 +22,11 @@ class IdentityController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-    /* Called by Mobil forwarded by ProxyApi
-     * 
-     * First step in the device registration.
-     * Generate a publicId and a privateId and (integrity)secret, credentialSecret and save after encryption in the Database
-     */
+    /*
+    * API endpoint for the first step of device registration (called by Mobile, forwarded by ProxyApi).
+    * Generates publicId, privateId, integrity secret, and credentialSecret.
+    * Encrypts and saves these credentials in the database.
+    */    
     #[Route('/secret/new', name: 'request-first-secret', methods: "GET")]
     public function requestFirstSecret(
         Request $request,
@@ -42,12 +42,11 @@ class IdentityController extends AbstractController
         return $this->json($response);
     }
 
-   /** Called by Mobil forwarded by HUB
-     * 
-     * Second step in the device registration.
-     * Retrive email and phone number and privacyPolicy and fcm_token from the request payload,
-     * and save with the privateId and publicId and secret
-     */
+    /*
+    * API endpoint for the second step of device registration (called by Mobile, forwarded by HUB).
+    * Receives request payload containing email, phone number, privacyPolicy, and fcm_token.
+    * Saves these along with privateId, publicId, and secret.
+    */    
     #[Route('/secret/recovery-settings', name: 'recovery-settings', methods: "POST")]
     public function requestRecoverySettings(
         Request $request,

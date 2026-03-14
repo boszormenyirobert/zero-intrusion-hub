@@ -1,6 +1,6 @@
 <?php
 /**
- * Fetches account data
+ * HUB VIEW: Fetches account data
  */
 namespace App\Controller\Account\HUB;
 

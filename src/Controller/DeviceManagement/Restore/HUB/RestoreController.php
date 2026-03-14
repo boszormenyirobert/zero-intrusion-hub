@@ -2,8 +2,16 @@
 
 /**
  * HUB View
- * 
- * Device replacement and recovery process => The user have the device. E-mail or Phone-number changed
+ * Handles device replacement and recovery processes when a user changes their device
+ * or updates their email/phone number.
+ *
+ * Responsibilities:
+ * - First step: collects user email and phone number, sends verification via email/SMS,
+ *   and moves the data to the recovery table.
+ * - Second step: confirms the user's PIN, generates a handy identifier, and produces
+ *   a QR code for frontend use.
+ * - Uses ReplaceDeviceService and GenerateQrService to manage recovery workflows.
+ * - Forwards requests to the backend via UserRegistrationService.
  */
 
 namespace App\Controller\DeviceManagement\Restore\HUB;
@@ -28,13 +36,12 @@ class RestoreController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-    /** 
-     * 
-     * First step in the device replacement process.
-     * Retrive email and phone number from the request payload,
-     * Send email and SMS
-     * Move the data to the recovery table
-     */
+    /*
+    * HUB endpoint for the first step in the device replacement process.
+    * Retrieves email and phone number from the request payload.
+    * Sends verification via email and SMS.
+    * Moves the user data to the recovery table.
+    */
     #[Route('/replace-device', name: 'replaceDeviceForm')]
     public function replaceDevice(
         Request $request,
@@ -58,12 +65,11 @@ class RestoreController extends AbstractController
     }
 
 
-    /** 
-     * 
-     * Second step in the device replacement process.
-     * Pin confirmation 
-     * Return with a handy identifier // FE generates a QR code
-     */
+    /*
+    * API endpoint for the second step in the device replacement process.
+    * Confirms the PIN provided by the user.
+    * Returns a handy identifier used by the frontend to generate a QR code.
+    */
     #[Route('/replace-device/{replaceHash}', name: 'replace_device_pin', methods: ['GET', 'POST'])]
     public function replaceDevicePin(
         String $replaceHash,
