@@ -1,6 +1,6 @@
 <?php
 
-namespace App\EventListener\CredentialHub\Shared;
+namespace App\EventListener\CredentialHub\OneTouch;
 
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
