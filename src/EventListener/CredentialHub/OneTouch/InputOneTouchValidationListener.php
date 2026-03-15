@@ -28,7 +28,7 @@ class InputOneTouchValidationListener
 
             ValidationListenerHelper::validateSource($data['type'], 'extension', $errors);
             ValidationListenerHelper::validateProcessId($data, $errors);
-            ValidationListenerHelper::validateIv($data['iv'], $errors);
+            ValidationListenerHelper::validateIv($data, $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([

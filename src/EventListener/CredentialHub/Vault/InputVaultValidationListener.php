@@ -61,13 +61,13 @@ class InputVaultValidationListener
             $data = json_decode($request->getContent(), true);
             $requiredFields = [
                 'application', 'description', 'source', 'targetId', 
-                'type', 'userName', 'userPassword', 'userPublicId'];
+                'type', 'userName', 'userPassword'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);            
             
             ValidationListenerHelper::validateSource($data['type'], 'update-applications', $errors);            
             ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);            
-            ValidationListenerHelper::validateUserPublicId($data, $errors);
+        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([

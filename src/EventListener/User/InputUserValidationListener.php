@@ -35,7 +35,7 @@ class InputUserValidationListener
             $requiredFields = ['publicId', 'message'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);           
-            ValidationListenerHelper::validateUserPublicId($data, $errors);
+        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
         
             $this->checkCorporate('cid_', $data['publicId'] ?? '', $errors);
             $this->checkCorporate('ckey', $data['message'] ?? '', $errors);
