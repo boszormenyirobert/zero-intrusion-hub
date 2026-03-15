@@ -34,7 +34,8 @@ class AccountController extends AbstractController
         JwtService $jwtService
     ): Response 
     { 
-        $jwtToken = $jwtService->jwtValidation($request);
+        $token = $request->cookies->get('jwt_token');
+        $jwtToken =  $jwtService->jwtValidation($token);
         
         if($jwtToken && $user = $this->identifyUser($jwtToken)){
 

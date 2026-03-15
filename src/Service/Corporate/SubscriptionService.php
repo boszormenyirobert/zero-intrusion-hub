@@ -7,7 +7,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use App\Service\Corporate\DatabaseService;
 use App\Service\User\UserRegistrationService;
-use App\Service\JWT\JwtService;
 
 class SubscriptionService
 {
@@ -17,8 +16,7 @@ class SubscriptionService
         private AuthorizationControllService $authorizationControllService,
         private RequestStack $requestStack,
         private DatabaseService $databaseService,
-        private UserRegistrationService $userRegistrationService,
-        private JwtService $jwtService
+        private UserRegistrationService $userRegistrationService
     ) {}
 
 

@@ -3,8 +3,13 @@
 namespace App\EventListener;
 
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Psr\Log\LoggerInterface;
 
+#[AsEventListener(
+    event: 'lexik_jwt_authentication.on_jwt_created',
+    method: 'onJWTCreated'
+)]
 class JwtCreatedListener
 {
     public function __construct(private LoggerInterface $logger) {}

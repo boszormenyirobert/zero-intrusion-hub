@@ -68,8 +68,8 @@
 
 	<script>
 		// Hide One Touch Activation button if loggedInUserName and loggedInUserPublicId are present in the localStorage - OneTouchUsers
-		 loggedInUserEmail = "{{ is_jwt_valid ? is_jwt_valid.username : '' }}";
-		 loggedInUserPublicId = "{{ is_jwt_valid ? is_jwt_valid.publicId : '' }}";
+			let loggedInUserEmail = "{{ userEmail|default('') }}";
+			let loggedInUserPublicId = "{{ userPublicId|default('') }}";
 		 oneTouchUsers = JSON.parse(localStorage.getItem("oneTouchUsers") || "[]");
 
 		oneTouchUsers.forEach(user => {

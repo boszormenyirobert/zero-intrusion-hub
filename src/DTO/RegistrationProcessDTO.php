@@ -60,7 +60,7 @@ class RegistrationProcessDTO
     /**
      * Get the value of processId
      */ 
-    public function getprocessId()
+    public function getProcessId()
     {
         return $this->processId;
     }

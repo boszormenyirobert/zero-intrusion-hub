@@ -15,6 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
+use App\Controller\CredentialHub\BackendForwared;
 
 
 #[Route('/api/credential-hub/one-touch')]
@@ -36,18 +37,7 @@ class OneTouchController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "one_touch_qr_identity";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [$process => json_decode($contentJson)]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-        
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'one_touch_qr_identity', false, true);
     }
 
     /*
@@ -62,22 +52,7 @@ class OneTouchController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService
     ): JsonResponse {
-        $contentJson = $request->getContent();
-
-        $process = "one_touch_identifier";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => json_decode($contentJson),
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-                ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-        
-        return $this->json($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'one_touch_identifier', true, true);
     }
 
     /*
@@ -91,21 +66,6 @@ class OneTouchController extends AbstractController
         UserRegistrationService $userRegistrationService,
         Request $request
     ): JsonResponse {
-        $contentJson = $request->getContent();
-        $process = "one_touch_state";
-
-        /** @var Response $response */
-        $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson,
-                'X-Extension-Auth' => $request->headers->get('X-Extension-Auth')
-            ]
-        );
-
-        $content = $response->getContent();
-        $decodedJson = \json_decode($content);
-       
-        
-       return new JsonResponse($decodedJson);
+        return BackendForwared::forward($request, $userRegistrationService, $this->logger, 'one_touch_state', true);
     }
 }

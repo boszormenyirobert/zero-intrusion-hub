@@ -33,11 +33,12 @@ class SecureDeviceController extends AbstractController
     public function secureDevice(
         Request $request
         ) {  
+        $token = $request->cookies->get('jwt_token');
+        $payload =  $this->jwtService->jwtValidation($token);
+        
         $userPublicId = null;
         $userEmail = null;
-
-        $payload = $this->jwtService->jwtValidation($request);
-         
+                 
         if($payload){                   
             $userPublicId = $payload['publicId'] ?? null;
             $userEmail = $payload['email'] ?? null;

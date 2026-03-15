@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Controller\User\UserService;
 use Psr\Log\LoggerInterface;
 use App\DTO\RegistrationProcessDTO;
+use App\Controller\CredentialHub\BackendForwared;
 
 class RegistrationController extends AbstractController
 {
@@ -35,17 +36,27 @@ class RegistrationController extends AbstractController
         Request $request
         ) 
     {       
-        $headers =  $request->headers->all();
+        $hmac = $request->headers->get('x-client-auth');
 
-        $corporateIentification = json_decode($request->getContent(), true);       
+        if (!$hmac) {
+            return new JsonResponse(['error' => 'Missing X-Client-Auth header!'], 401);
+        }
 
-        $process = "user_registration"; 
-
-        $corporateIentification['hmac'] = $headers['x-client-auth'];
-
-        $response = $this->userService->getQrCode($process, $corporateIentification);
-
-        return $this->json($response);
+        try {
+            return BackendForwared::forwardWithHmac(
+                $request,
+                $this->userService,
+                $this->logger,
+                'user_registration',
+                $hmac,
+                decodeBody: true
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('User registration failed', [
+                'error' => $e->getMessage()
+            ]);
+            return new JsonResponse(['error' => 'Registration failed'], 500);
+        }
     }    
 
     /*

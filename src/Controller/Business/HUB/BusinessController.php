@@ -12,7 +12,6 @@ use App\Attribute\JwtRequired;
 use App\Service\Corporate\SubscriptionService;
 use App\Form\BusinessRequesterType;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use App\Form\IdentityRequesterType;
 use App\Repository\UserRepository;
 use App\Service\JWT\JwtService;
 
@@ -39,8 +38,8 @@ class BusinessController extends AbstractController
     JwtService $jwtService
     ): Response 
     {   
-
-        $jwtToken = $jwtService->jwtValidation($request);
+        $token = $request->cookies->get('jwt_token');
+        $jwtToken =  $jwtService->jwtValidation($token);
 
         if($jwtToken && $user = $this->identifyUser($jwtToken)){
             $values = [

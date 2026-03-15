@@ -2,29 +2,34 @@
 
 namespace App\Service\JWT;
 
-
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
-use App\Attribute\JwtRequired;
+use Psr\Log\LoggerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 
 class JwtService
 {
     public function __construct(
-        private JWTEncoderInterface $jwtEncoder
+        private JWTEncoderInterface $jwtEncoder,
+        private LoggerInterface $logger
     ) {}
 
-    public function jwtValidation(        
-        Request $request
-    )
+    public function jwtValidation(?string $token): array|false
     {
-        $jwt_token = $request->cookies->get('jwt_token') ?? '';      
-        if(!$jwt_token){
+        if (!$token) {
             return false;
         }
-        
-        return $this->jwtEncoder->decode($jwt_token);
-    }    
+
+        try {
+            $payload = $this->jwtEncoder->decode($token);
+
+            return $payload ?: false;
+
+        } catch (\Throwable $e) {
+            $this->logger->warning('JWT decode failed', [
+                'exception' => $e,
+                'has_token' => $token !== null
+            ]);
+
+            return false;
+        }
+    }
 }

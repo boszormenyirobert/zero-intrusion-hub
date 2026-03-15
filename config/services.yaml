@@ -44,12 +44,6 @@ services:
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
 
-    App\EventListener\JwtCreatedListener:
-        autowire: true
-        autoconfigure: false
-        tags:
-            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
-
     App\Service\Corporate\SubscriptionService:
         arguments:
             session: '@session.session'

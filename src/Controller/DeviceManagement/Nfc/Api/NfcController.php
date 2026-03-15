@@ -15,9 +15,9 @@ use App\Controller\User\UserService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\Response;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Service\User\UserRegistrationService;
+use App\Controller\CredentialHub\BackendForwared;
 
 class NfcController extends AbstractController
 {
@@ -37,23 +37,9 @@ class NfcController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
         ) {
-            $headers =  $request->headers->all();
+        $hmac = $request->headers->get('x-client-auth');
 
-            $corporateIentification = json_decode($request->getContent(), true);       
-
-            $process = "api_nfc_users"; 
-
-            $corporateIentification['hmac'] = $headers['x-client-auth'];
-
-            /** @var Response $response */
-            $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $corporateIentification,
-                'X-Extension-Auth' => $corporateIentification['hmac']
-            ]
-        );
-
-        return $this->json($response);
+        return BackendForwared::forwardWithHmac($request, $userRegistrationService, $this->logger, "api_nfc_users", $hmac);        
     }
 
     /*
@@ -65,22 +51,8 @@ class NfcController extends AbstractController
         Request $request,
         UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
         ) {
-            $headers =  $request->headers->all();
+        $hmac = $request->headers->get('x-client-auth');
 
-            $data = json_decode($request->getContent(), true);       
-
-            $process = "api_nfc_decrypt"; 
-
-            $data['hmac'] = $headers['x-client-auth'];
-
-            /** @var Response $response */
-            $response = $userRegistrationService->forwardRegistration(
-            [
-                $process => $data,
-                'X-Extension-Auth' => $data['hmac']
-            ]
-        );
-
-        return $this->json($response);
+        return BackendForwared::forwardWithHmac($request, $userRegistrationService, $this->logger, "api_nfc_decrypt", $hmac);           
     }    
 }
