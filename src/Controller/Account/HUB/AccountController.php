@@ -12,12 +12,14 @@ use App\Service\User\UserRegistrationService;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Repository\UserRepository;
 use App\Service\JWT\JwtService;
+use Psr\Log\LoggerInterface;
 
 class AccountController extends AbstractController
 {
     public function __construct(
         private JWTEncoderInterface $jwtEncoder,
         private UserRepository $userRepository,
+        private LoggerInterface $logger
     ) {}
 
     /**
@@ -36,7 +38,7 @@ class AccountController extends AbstractController
     { 
         $token = $request->cookies->get('jwt_token');
         $jwtToken =  $jwtService->jwtValidation($token);
-        
+
         if($jwtToken && $user = $this->identifyUser($jwtToken)){
 
             $process = "get_registrated_business";

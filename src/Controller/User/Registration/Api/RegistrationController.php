@@ -42,21 +42,11 @@ class RegistrationController extends AbstractController
             return new JsonResponse(['error' => 'Missing X-Client-Auth header!'], 401);
         }
 
-        try {
-            return BackendForwared::forwardWithHmac(
-                $request,
-                $this->userService,
-                $this->logger,
-                'user_registration',
-                $hmac,
-                decodeBody: true
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('User registration failed', [
-                'error' => $e->getMessage()
-            ]);
-            return new JsonResponse(['error' => 'Registration failed'], 500);
-        }
+        $corporateIentification = json_decode($request->getContent(), true); 
+        $corporateIentification['hmac'] = $hmac;
+        $response = $this->userService->getQrCode("user_registration", $corporateIentification);
+
+        return $this->json($response);
     }    
 
     /*

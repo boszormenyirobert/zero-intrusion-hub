@@ -18,9 +18,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\Cookie;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use App\DTO\RegistrationProcessDTO;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class LoginController extends AbstractController
 {
@@ -31,17 +32,14 @@ class LoginController extends AbstractController
 
     /*
     * API endpoint called from any registered domain to generate a QR code for login.
+    * Not for HUB Frontend, but for any other domain that wants to use the login functionality.
     */
     #[Route('/api/user-login', name: 'api_instance_login', methods: "POST")]
     public function apiLogin(
         Request $request
     ) {   
-        $headers =  $request->headers->all();
-
-        $corporateIentification = json_decode($request->getContent(), true);   
-
-        $process = 'user_login';
-        $response = $this->userService->getQrCode($process, $corporateIentification, $corporateIentification['userPublicId'] ?? null);
+        $corporateIentification = $this->decodeRequest($request);
+        $response = $this->userService->getQrCode('user_login', $corporateIentification, $corporateIentification['userPublicId'] ?? null);
 
         return $this->json($response);
     }    
@@ -62,20 +60,18 @@ class LoginController extends AbstractController
         Request $request
         ): JsonResponse
     {
-        $response = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        $this->logger->critical('Login callback received', ['response' => $response]);
-
+        $response = $this->decodeRequest($request);
         $dto = RegistrationProcessDTO::mapFromArrayLogin($response);
 
         return new JsonResponse([
             'status' => 'ok',
             'success' => $this->userService->allowSetUserLoginProcess($dto),
         ]);
-
     }
     
     /*
     * API endpoint called from the HUB Frontend to generate a new QR code for login.
+    * CSRF is not primary protection, but extra browser-level guard
     */
     #[Route('/api/user-login/new-qr', name: 'user_login_new_qr', methods: "POST")]
     public function userLoginNewQr(
@@ -90,7 +86,8 @@ class LoginController extends AbstractController
             return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
 
-        $userPublicId = "6ebIY8srJAJ+AeXzcuYknCr3OCBi89rVt///NdG50oYyZWE=";
+        // For future: use for "OneTouch" login
+        $userPublicId = "";
 
         return $this->json([
             'authentication' => $this->userService->getQrCode('user_login', [], $userPublicId),
@@ -99,11 +96,13 @@ class LoginController extends AbstractController
     }
 
     /*
-    * API endpoint called from the HUB Frontend to poll the login status after the QR code has been scanned.
+    * Not USED => Has to be checked
+    * API endpoint called from the HUB ??? Frontend to poll the login status after the QR code has been scanned.
     * Validates the CSRF token and checks if the user associated with the login process is allowed to log in.
     * If allowed, generates a JWT token for the user and returns it in the response, along with setting a secure, HTTP-only cookie for the JWT token.
      * If not allowed, returns an error message indicating unsuccessful authentication.
      * The QR code validity period is 10 seconds, after which the login attempt will fail if not completed.
+     * CSRF is not primary protection, but extra browser-level guard
     */
     #[Route('/api/user-login/check', name: 'user_login_check', methods: "POST")]
     public function userLoginCheck(
@@ -113,33 +112,78 @@ class LoginController extends AbstractController
         JWTTokenManagerInterface $jwtManager
     ): JsonResponse
     {
-        $tokenFromHeader = $request->headers->get('X-CSRF-TOKEN');
+        $this->assertValidCsrf($request, $csrfTokenManager);
 
-        if (!$csrfTokenManager->isTokenValid(new CsrfToken('userLoginCsrf', $tokenFromHeader))) {
-            return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
+        $payload  = $this->decodeRequest($request);
+        $processId = $this->extractProcessId($payload );
+
+        $user = $userRepository->findOneByProcess($processId);
+
+        if (!$user || !$user->isAllowed()) {
+            return $this->authenticationFailed();
         }
 
-        $processData = json_decode($request->getContent(), true);
-
-        $user = $userRepository->findOneBy([
-            'process' => $processData['domainProcessId']
+        $token = $jwtManager->create($user);
+        return $this->authenticationSuccess($token);
+    }
+    
+    private function authenticationSuccess(string $token): JsonResponse
+    {
+        $response = new JsonResponse([
+            'message' => 'Authentication success',
+            'jwt_token' => $token,
         ]);
-        
-        if($user && $user->isAllowed()){            
-            $token = $jwtManager->create($user);
-            $response = new JsonResponse([
-                'message' => 'Authentication is success',
-                'jwt_token' => $token
+
+        $response->headers->setCookie(
+            $this->buildJwtCookie($token)
+        );
+
+        return $response;
+    }    
+
+    private function assertValidCsrf(
+        Request $request,
+        CsrfTokenManagerInterface $csrfTokenManager
+    ) {
+        $token = $request->headers->get('X-CSRF-TOKEN');
+        if (!$csrfTokenManager->isTokenValid(
+            new CsrfToken('userLoginCsrf', $token)
+        )) {
+            throw new AccessDeniedHttpException('Invalid CSRF token');
+        }
+    }
+
+    private function extractProcessId(array $payload): string
+    {
+        if (empty($payload['domainProcessId'])) {
+            throw new BadRequestHttpException('domainProcessId missing');
+        }
+
+        return $payload['domainProcessId'];
+    }
+
+    private function authenticationFailed(): JsonResponse
+    {
+        return new JsonResponse([
+            'message' => 'Authentication failed. QR code expired.'
+        ], 401);
+    }
+
+    private function decodeRequest(Request $request): array
+    {
+        try {
+            return json_decode(
+                $request->getContent(),
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        } catch (\JsonException $e) {
+            $this->logger->error('Invalid login callback JSON', [
+                'error' => $e->getMessage(),
             ]);
 
-            $response->headers->setCookie(
-                // TODO  set the first false > true in prod
-                new Cookie('jwt_token', $token, time() + 3600, '/', null, false, true, false, 'Strict')
-            );
-
-            return $response;
+            throw new BadRequestHttpException('Invalid JSON payload');
         }
-
-        return $this->json(['message' => 'Unsuccess authentication. The QR code validity period(10 seconds) has expired.']);
-    }    
+    }   
 }
