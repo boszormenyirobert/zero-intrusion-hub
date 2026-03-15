@@ -18,7 +18,7 @@ class InstanceController extends AbstractController
     * If JWT token is present in cookies, decodes it to check if it's valid and passes this info to the template.
     */
     #[Route('/', name: 'home')]
-    public function home(        
+    public function contractRequest(        
         Request $request,
         JwtService $jwtService,
         LoggerInterface $logger,
