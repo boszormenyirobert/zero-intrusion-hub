@@ -77,6 +77,11 @@ services:
 
             ZERO_INTRUSION_ACCOUNT: '%ZERO_INTRUSION_ACCOUNT%'
             INSTALLATION_PUBLIC_ID: '%INSTALLATION_PUBLIC_ID%'
+    App\Service\JWT\JwtService:
+        autowire: true
+        autoconfigure: true
+        public: false
+                    
     App\Twig\AppExtension:
         arguments:
             $requestStack: '@request_stack'
