@@ -6,12 +6,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Psr\Log\LoggerInterface;
 use App\Service\JWT\JwtService;
 
 class InstanceController extends AbstractController
 {
+    public function __construct(
+        private JwtService $jwtService,
+        private LoggerInterface $logger,
+    ) {}
+
     /*
     * Home page for the HUB instance, shows the Instance Registration process if the .env variable 
     * ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION is set to true.
@@ -19,14 +23,11 @@ class InstanceController extends AbstractController
     */
     #[Route('/', name: 'home')]
     public function contractRequest(        
-        Request $request,
-        JwtService $jwtService,
-        LoggerInterface $logger,
-        JWTEncoderInterface $jwtEncoder
+        Request $request
     ): Response
     {
         $token = $request->cookies->get('jwt_token') ?? '';      
-        $payload =  $jwtService->jwtValidation($token);
+        $payload =  $this->jwtService->jwtValidation($token);
 
         $isJwtValid = $payload !== false;
         $userPublicId = $isJwtValid ? ($payload['publicId'] ?? '') : '';
