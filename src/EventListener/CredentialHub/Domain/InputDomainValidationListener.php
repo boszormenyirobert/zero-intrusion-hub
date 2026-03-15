@@ -22,12 +22,12 @@ class InputDomainValidationListener
         if ( ($path === '/api/credential-hub/domain/read/qr-identity' 
         ||    $path === '/api/credential-hub/domain/delete/qr-identity') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
-            $requiredFields = ['domain', 'userPublicId'];
+            $requiredFields = ['domain'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateDomain($data, $errors);
-            ValidationListenerHelper::validateUserPublicId($data, $errors);
+           // ValidationListenerHelper::validateUserPublicId($data, $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
                     'error' => 'Invalid input.',
