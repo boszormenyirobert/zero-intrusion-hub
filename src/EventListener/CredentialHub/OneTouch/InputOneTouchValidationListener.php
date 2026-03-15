@@ -44,7 +44,7 @@ class InputOneTouchValidationListener
             $errors = [];
             $data = json_decode($request->getContent(), true);  
 
-            $requiredFields = ['source', 'type', 'userPublicId'];
+            $requiredFields = ['source', 'type'];
 
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 

@@ -20,13 +20,13 @@ class InputVaultValidationListener
         // /api/credential-hub/vault/read/qr-identity
         if ( ($path === '/api/credential-hub/vault/read/qr-identity') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
-            $requiredFields = ['domain', 'userPublicId', 'source', 'type'];
+            $requiredFields = ['domain', 'source', 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);     
                    
             ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);
             ValidationListenerHelper::validateSource($data['type'], 'applications', $errors);
-            ValidationListenerHelper::validateUserPublicId($data, $errors);
+        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
                     'error' => 'Invalid input.',

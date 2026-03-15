@@ -48,12 +48,12 @@ class InputSharedValidationListener
                 // ValidationListenerHelper::validateApplication($data, $errors);
             }      
 
-            $requiredFields = ['description', 'isNew', 'source', 'type', 'userName', 'userPassword', 'userPublicId'];
+            $requiredFields = ['description', 'isNew', 'source', 'type', 'userName', 'userPassword'];
 
             ValidationListenerHelper::validateNoControlChars($data,$requiredFields,$errors);            
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
             
-            ValidationListenerHelper::validateUserPublicId($data, $errors);
+        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
             ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
