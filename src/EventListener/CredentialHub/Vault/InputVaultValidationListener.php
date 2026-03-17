@@ -17,16 +17,15 @@ class InputVaultValidationListener
         $path = $request->getPathInfo();
         $method = $request->getMethod();
 
-        // /api/credential-hub/vault/read/qr-identity
         if ( ($path === '/api/credential-hub/vault/read/qr-identity') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
-            $requiredFields = ['domain', 'source', 'type'];
+            $requiredFields = ['domain', 'source', 'type', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);     
                    
             ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);
             ValidationListenerHelper::validateSource($data['type'], 'applications', $errors);
-        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
+            ValidationListenerHelper::validateUserPublicId($data, $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
                     'error' => 'Invalid input.',
@@ -35,14 +34,14 @@ class InputVaultValidationListener
             }
             return;
         }
-        // api/credential-hub/vault/read/state
+
         if ( ($path === '/api/credential-hub/vault/read/state') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = ['domain', 'iv', 'processId', 'type'];
             $errors = [];
-            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);            
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);                        
             
-            // domain validation is unnecessary, it can be valid domain or empty
+            ValidationListenerHelper::validateDomain($data, false, $errors); 
             ValidationListenerHelper::validateIv($data, $errors);       
             ValidationListenerHelper::validateProcessId($data, $errors);     
             ValidationListenerHelper::validateSource($data['type'], 'extension', $errors);            
@@ -56,18 +55,20 @@ class InputVaultValidationListener
             return;
         }
 
-        // /api/credential-hub/vault/edit/qr-identity
         if ( ($path === '/api/credential-hub/vault/edit/qr-identity') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = [
                 'application', 'description', 'source', 'targetId', 
-                'type', 'userName', 'userPassword'];
+                'type', 'userName', 'userPassword', 'userPublicId'];
             $errors = [];
-            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);            
-            
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);    
+                    
+            ValidationListenerHelper::validateApplication($data, $errors);
+            ValidationListenerHelper::validateDescription($data, $errors);
+            ValidationListenerHelper::validateTargetId($data, $errors);
             ValidationListenerHelper::validateSource($data['type'], 'update-applications', $errors);            
             ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);            
-        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
+            ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
@@ -78,15 +79,15 @@ class InputVaultValidationListener
             return;
         }        
 
-        // /api/credential-hub/vault/delete/qr-identity
         if ( ($path === '/api/credential-hub/vault/delete/qr-identity') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = ['source', 'targetId', 'type', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);            
             
-            ValidationListenerHelper::validateSource($data['type'], 'delete-applications', $errors);            
-            ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);            
+            ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);        
+            ValidationListenerHelper::validateTargetId($data, $errors);
+            ValidationListenerHelper::validateSource($data['type'], 'delete-applications', $errors);                
             ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
@@ -98,8 +99,6 @@ class InputVaultValidationListener
             return;
         }
         
-        // /api/credential-hub/vault/edit/state
-        // /api/credential-hub/vault/delete/state
         if ( ($path === '/api/credential-hub/vault/edit/state' || $path === '/api/credential-hub/vault/delete/state') && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = ['processId', 'type'];

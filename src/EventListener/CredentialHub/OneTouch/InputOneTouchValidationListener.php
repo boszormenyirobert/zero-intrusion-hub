@@ -17,29 +17,6 @@ class InputOneTouchValidationListener
         $path = $request->getPathInfo();
         $method = $request->getMethod();
 
-        // /api/credential-hub/one-touch/state
-        if ($path === '/api/credential-hub/one-touch/state'  && $method === 'POST') {
-            $data = json_decode($request->getContent(), true);
-            $errors = [];
-
-            $requiredFields = ['processId', 'type', 'iv'];                        
-
-            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
-
-            ValidationListenerHelper::validateSource($data['type'], 'extension', $errors);
-            ValidationListenerHelper::validateProcessId($data, $errors);
-            ValidationListenerHelper::validateIv($data, $errors);
-
-            if (!empty($errors)) {
-                $event->setResponse(new JsonResponse([
-                    'error' => 'Invalid input.',
-                    'validation_errors' => $errors
-                ], 400));
-            }
-            return;
-        }
-
-        // /api/credential-hub/one-touch/qr-identity
         if ($path === '/api/credential-hub/one-touch/qr-identity' && $method === 'POST') {
             $errors = [];
             $data = json_decode($request->getContent(), true);  
@@ -59,5 +36,26 @@ class InputOneTouchValidationListener
             }
             return;
         }       
+
+        if ($path === '/api/credential-hub/one-touch/state'  && $method === 'POST') {
+            $data = json_decode($request->getContent(), true);
+            $errors = [];
+
+            $requiredFields = ['iv', 'processId', 'type'];                        
+
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
+            
+            ValidationListenerHelper::validateIv($data, $errors);
+            ValidationListenerHelper::validateProcessId($data, $errors);
+            ValidationListenerHelper::validateSource($data['type'], 'extension', $errors);            
+
+            if (!empty($errors)) {
+                $event->setResponse(new JsonResponse([
+                    'error' => 'Invalid input.',
+                    'validation_errors' => $errors
+                ], 400));
+            }
+            return;
+        }        
     }
 }

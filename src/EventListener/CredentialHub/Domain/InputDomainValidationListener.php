@@ -17,17 +17,14 @@ class InputDomainValidationListener
         $path = $request->getPathInfo();
         $method = $request->getMethod();
 
-        // /api/credential-hub/domain/read/qr-identity endpoint validation
-        // /api/credential-hub/domain/delete/qr-identity
-        if ( ($path === '/api/credential-hub/domain/read/qr-identity' 
-        ||    $path === '/api/credential-hub/domain/delete/qr-identity') && $method === 'POST') {
+        if ( $path === '/api/credential-hub/domain/read/qr-identity' && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
-            $requiredFields = ['domain'];
+            $requiredFields = ['domain', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
-            ValidationListenerHelper::validateDomain($data, $errors);
-           // ValidationListenerHelper::validateUserPublicId($data, $errors);
+            ValidationListenerHelper::validateDomain($data, true, $errors);
+            ValidationListenerHelper::validateUserPublicId($data, $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
                     'error' => 'Invalid input.',
@@ -37,14 +34,34 @@ class InputDomainValidationListener
             return;
         }
 
-        // /api/credential-hub/domain/read/state endpoint validation
+        if ($path === '/api/credential-hub/domain/delete/qr-identity' && $method === 'POST') {
+            $data = json_decode($request->getContent(), true);
+            $requiredFields = ['domain', 'source', 'targetId', 'type', 'userPublicId'];
+            $errors = [];
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
+            
+            ValidationListenerHelper::validateDomain($data, true,$errors);
+            ValidationListenerHelper::validateSource($data['source'], 'extension', $errors);
+            ValidationListenerHelper::validateTargetId($data, $errors);
+            ValidationListenerHelper::validateSource($data['type'], 'delete-domain', $errors);            
+            ValidationListenerHelper::validateUserPublicId($data, $errors);
+
+            if (!empty($errors)) {
+                $event->setResponse(new JsonResponse([
+                    'error' => 'Invalid input.',
+                    'validation_errors' => $errors
+                ], 400));
+            }
+            return;
+        }
+
         if ($path === '/api/credential-hub/domain/read/state' && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = ['domain', 'iv', 'processId', 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
             
-            ValidationListenerHelper::validateDomain($data, $errors);
+            ValidationListenerHelper::validateDomain($data, true,$errors);
             ValidationListenerHelper::validateIv($data, $errors);
             ValidationListenerHelper::validateProcessId($data, $errors);
             ValidationListenerHelper::validateSource($data['type'], 'extension', $errors);
@@ -56,9 +73,8 @@ class InputDomainValidationListener
                 ], 400));
             }
             return;
-        }
+        }     
 
-        // /api/credential-hub/domain/delete/state
         if ($path === '/api/credential-hub/domain/delete/state' && $method === 'POST') {
             $data = json_decode($request->getContent(), true);
             $requiredFields = ['processId', 'type'];
