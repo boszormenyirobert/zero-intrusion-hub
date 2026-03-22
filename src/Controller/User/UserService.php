@@ -39,10 +39,7 @@ class UserService
     public function getQrCode(string $process, array $corporateIdentification = [], ?string $userPublicId = null): array
     {
         $response = $this->prepareSecurePostRequest($process, $corporateIdentification, $userPublicId);
-        $this->logger->critical('response data', ['response' => $response]);
-
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);        
-        $this->logger->critical('Authorized data', ['authorizedData' => $authorizedData]);
         $this->saveProcess($process, $authorizedData);
         
         return $authorizedData;
@@ -86,7 +83,7 @@ class UserService
             return $this->logVerificationError();
         }
 
-        $this->logger->critical("The signature is valid.");
+        $this->logger->error("The signature is valid.");
 
         $registrationUser = $this->userRepository->findOneBy([
             'email' => $authorizedUser->getEmail(),
@@ -94,7 +91,7 @@ class UserService
         ]);
 
         if (!$registrationUser) {
-            $this->logger->critical('User not found');
+            $this->logger->info('User not found');
             return false;
         }
 
@@ -214,7 +211,7 @@ class UserService
         $publicKey = openssl_pkey_get_public($publicKeyPem);
         
         if (!$publicKey) {
-            $this->logger->critical('Failed to load public key: ' . openssl_error_string());
+            $this->logger->info('Failed to load public key: ' . openssl_error_string());
         }
 
         return openssl_verify($userIdentity, $recivedSignature, $publicKey, OPENSSL_ALGO_SHA256);
@@ -227,7 +224,7 @@ class UserService
      */
     private function logVerificationError(): false
     {
-        $this->logger->critical("An error occurred during verification.");        
+        $this->logger->info("An error occurred during verification.");        
         return false;
     }
 }

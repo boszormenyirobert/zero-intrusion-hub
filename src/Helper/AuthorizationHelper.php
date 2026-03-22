@@ -91,6 +91,9 @@ final class AuthorizationHelper
         $encryptedData = $data->corporateIdentity;
         $decodedJsonData = json_decode($response->getContent(), true);
         if (!isset($decodedJsonData['iv'])) {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Missing IV in response'
+            ]);  
             return [
                 'success' => false,
                 'error' => 'Missing IV in response'
@@ -107,10 +110,12 @@ final class AuthorizationHelper
             $service_api_key => $service_api_secret
         ];
 
-
         $headers = $response->headers->all();
         $authHeader = $headers['x-auth'][0] ?? null;
         if (!$authHeader) {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Missing X-Auth header'
+            ]);  
             return [
                 'success' => false,
                 'error' => 'Missing X-Auth header'
@@ -120,6 +125,9 @@ final class AuthorizationHelper
         $matches = preg_split("/[ :]+/", $authHeader);
 
         if ($matches[0] !== "HMAC") {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Invalid HMAC'
+            ]);  
             return ([
                 'success' => false,
                 'error' => "Invalid Authorization header"
@@ -129,6 +137,9 @@ final class AuthorizationHelper
         [$apiKey, $recvSignature] = [$matches[1], $matches[2]];
 
         if (!isset($secretKeyStore[$apiKey])) {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Unknown API key'
+            ]);  
             return ([
                 'success' => false,
                 'error' => 'Unknown API key'
@@ -142,6 +153,9 @@ final class AuthorizationHelper
 
 
         if (!hash_equals($expectedSignature, $recvSignature)) {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Invalid HMAC signature'
+            ]);  
             return ([
                 'success' => false,
                 'error' => 'Invalid HMAC signature'
@@ -164,19 +178,8 @@ final class AuthorizationHelper
      */
     public function buildRequest(string $authorization, $encryptedData, string $target, ?string $forwardedAuthHeader = null): JsonResponse
     {
-        $header = [
-            'Content-Type' => 'application/json',
-            'X-Auth' => $authorization
-        ];
-
-        if ($forwardedAuthHeader) {
-            $header['X-Extension-Auth'] = $forwardedAuthHeader;
-        }
-
-        $payload = [
-            'zeroIntrusionProyApi' => $encryptedData,
-            'iv' => $this->getIvBase64()
-        ];
+        $header = $this->getRequestHeader($authorization, $forwardedAuthHeader);
+        $payload = $this->getRequestPayload($encryptedData);
 
         try {
             $response = $this->client->request('POST', $target, [
@@ -193,6 +196,26 @@ final class AuthorizationHelper
                 'responseBody' => $e->getMessage()
             ], 403);
         }
+    }
+
+    private function getRequestHeader(string $authorization, ?string $forwardedAuthHeader = null): array{
+        $header = [
+            'Content-Type' => 'application/json',
+            'X-Auth' => $authorization
+        ];
+
+        if ($forwardedAuthHeader) {
+            $header['X-Extension-Auth'] = $forwardedAuthHeader;
+        }
+
+        return $header;
+    }
+
+    private function getRequestPayload($encryptedData): array{
+        return [
+            'zeroIntrusionProyApi' => $encryptedData,
+            'iv' => $this->getIvBase64()
+        ];
     }
     
     /**

@@ -86,6 +86,9 @@ class AuthorizationControllService
     public function getSecurePostRequest(array $dataIntegrity): JsonResponse
     {
         $target = $this->routeService->mapRoute($dataIntegrity);
+        $this->logger->info('Forwarding secure POST request', [
+            'target' => $target
+        ]);
         $initEncryptedData = new CrypterService($dataIntegrity, $this->params);
         $authHelper = $this->getAuthorizationHelper();
         
@@ -95,6 +98,19 @@ class AuthorizationControllService
             $target,            
             $dataIntegrity['X-Extension-Auth'] ?? null
         );
+        
+        try{
+            $decoded = json_decode($response->getContent(), true);
+            $this->logger->info('Secure POST request response received', [
+                'status' => $response->getStatusCode(),
+                'success' => $decoded['success'] ?? 'No success field in response',
+                'userValidation' => $decoded['validation'] ?? 'No userValidation field in response'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error processing backend response', [
+                'error' => $e->getMessage()
+            ]);  
+        }      
 
         return $response;
     }

@@ -51,7 +51,7 @@ class RegistrationController extends AbstractController
         if ($formIdentity->isSubmitted() && $formIdentity->isValid()) {
        
             $publicId = $this->params->get('INSTALLATION_PUBLIC_ID');
-            $this->logger->critical('PublicId for instance registration', ['publicId' => $publicId]);   
+            $this->logger->info('PublicId for instance registration', ['publicId' => $publicId]);   
 
             $subscriptionData = $subscriptionService->getSubscriptionData($process, $businessModel, 'internal', $publicId);            
         }
