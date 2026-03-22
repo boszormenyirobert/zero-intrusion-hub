@@ -9,15 +9,12 @@ use App\Helper\AuthorizationHelper;
 use Psr\Log\LoggerInterface;
 use App\Service\Shared\RouteService;
 use App\Service\Instance\InstanceSettingsService;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class AuthorizationControllService
 {
 
     /**
-     * Constructor for AuthorizationControllService.
-     *
-     * Dependencies are injected by Symfony's service container.
-     *
      * @param HttpClientInterface $client HTTP client for backend API calls
      * @param ContainerBagInterface $params Parameter bag for configuration
      * @param LoggerInterface $logger Logger for debug and error logging
@@ -34,7 +31,6 @@ class AuthorizationControllService
 
     /**
      * Generates a unique HMAC-based request identity for the current timestamp and corporate key.
-     *
      * Used for HMAC authentication in API requests.
      *
      * Called from: UserService (getPublicIdDomainHmac), and anywhere a new request identity is needed for secure API calls.
@@ -53,13 +49,11 @@ class AuthorizationControllService
 
     /**
      * Validates the authorization of a backend API response and decrypts the content if authorized.
-     *
      * Uses AuthorizationHelper to check HMAC headers and decrypts the corporate identity if successful.
      *
      * Called from: SubscriptionService (getSubscriptionData), UserService (getQrCode, getNfcUsers), 
      * and other services after receiving a backend response.
      *
-     * @param Response $response The HTTP response from the backend API
      * @return mixed Decrypted data if authorized, or an array with error details
      */
     public function controllAuthorization($response)
@@ -82,15 +76,14 @@ class AuthorizationControllService
     
     /**
      * Builds and sends a secure POST request to the backend API with encrypted data and HMAC authorization.
-     *
      * Uses AuthorizationHelper to build the request, encrypt data, and set headers. Returns the backend response.
-     *
-     * Called from: UserRegistrationService (forwardRegistration), Device\ReplaceDeviceService (forwardRegistration), UserService (getQrCode, getNfcUsers), and other services needing secure backend communication.
+     * Called from: UserRegistrationService (forwardRegistration), Device\ReplaceDeviceService (forwardRegistration), 
+     * UserService (getQrCode, getNfcUsers), and other services needing secure backend communication.
      *
      * @param array $dataIntegrity The data to be encrypted and sent
-     * @return Response The HTTP response from the backend API
+     * @return JsonResponse The HTTP response from the backend API
      */
-    public function getSecurePostRequest(array $dataIntegrity)
+    public function getSecurePostRequest(array $dataIntegrity): JsonResponse
     {
         $target = $this->routeService->mapRoute($dataIntegrity);
         $initEncryptedData = new CrypterService($dataIntegrity, $this->params);
@@ -108,7 +101,6 @@ class AuthorizationControllService
 
     /**
      * Instantiates and returns an AuthorizationHelper for HMAC and encryption operations.
-     *
      * Used internally by this service for building requests and validating responses.
      *
      * @return AuthorizationHelper

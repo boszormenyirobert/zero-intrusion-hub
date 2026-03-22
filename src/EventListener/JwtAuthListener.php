@@ -12,6 +12,13 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Psr\Log\LoggerInterface;
 
 
+/**
+ * Event listener for JWT authentication on controller actions.
+ *
+ * Intercepts controller events, checks for JwtRequired attribute,
+ * validates the JWT token from cookies, and redirects to login if invalid.
+ * Sets a request attribute 'is_jwt_valid' for downstream use.
+ */
 #[AsEventListener(event: KernelEvents::CONTROLLER)]
 class JwtAuthListener
 {
@@ -26,14 +33,14 @@ class JwtAuthListener
         $controller = $event->getController();
 
         if (!is_array($controller)) {
-            return; // nem controller osztály
+            return; 
         }
 
         $method = new \ReflectionMethod($controller[0], $controller[1]);
         $attributes = $method->getAttributes(JwtRequired::class);
 
         if (empty($attributes)) {
-            return; // nincs #[JwtRequired], nincs teendő
+            return; 
         }
 
         $request = $event->getRequest();

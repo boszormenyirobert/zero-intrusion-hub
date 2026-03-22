@@ -7,10 +7,10 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use App\Service\Corporate\DatabaseService;
 use App\Service\User\UserRegistrationService;
+use Symfony\Component\HttpFoundation\Response;
 
 class SubscriptionService
 {
-
     public function __construct(
         private LoggerInterface $logger,
         private AuthorizationControllService $authorizationControllService,
@@ -41,17 +41,10 @@ class SubscriptionService
             ]
         );
 
-        // $response = $this->authorizationControllService->getSecurePostRequest(
-        //     [$process => ['initialization' => true]]
-        // );
-
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);
         if($type == 'internal'){
             $this->databaseService->createOwnClient($authorizedData);
         }
-        
-       // $session = $this->requestStack->getSession();
-       // $session->set('authorizedData', $authorizedData);
         
         return $authorizedData;
     }

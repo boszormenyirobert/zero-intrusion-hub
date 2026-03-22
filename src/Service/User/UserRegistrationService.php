@@ -3,17 +3,21 @@
 namespace App\Service\User;
 
 use App\Service\Corporate\AuthorizationControllService;
-use Symfony\Component\HttpFoundation\Response;
+use \Symfony\Component\HttpFoundation\JsonResponse;
+use Psr\Log\LoggerInterface;
 
 class UserRegistrationService
 {
-
     public function __construct(
         private AuthorizationControllService $authorizationControllService,
-        private \Psr\Log\LoggerInterface $logger
+        private LoggerInterface $logger
     ) {}
 
-    public function forwardRegistration(array $data)
+    /**
+     * Forwards registration data securely to the authorization service.
+     * Returns the response from the backend.
+     */
+    public function forwardRegistration(array $data): JsonResponse
     {
         $response = $this->authorizationControllService->getSecurePostRequest($data);
 

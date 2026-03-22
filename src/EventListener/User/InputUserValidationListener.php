@@ -30,15 +30,14 @@ class InputUserValidationListener
 
             $data = json_decode($request->getContent(), true);
             // publicId => corporate public id
-            // domain control removed, local development with port usage is not alloed in the validator function
 
-            $requiredFields = ['publicId', 'message'];
+            $requiredFields = ['publicId', 'message', 'userPublicId'];
             $errors = [];
-            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);           
-        //    ValidationListenerHelper::validateUserPublicId($data, $errors);
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);                      
         
             $this->checkCorporate('cid_', $data['publicId'] ?? '', $errors);
             $this->checkCorporate('ckey', $data['message'] ?? '', $errors);
+//            ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
@@ -50,13 +49,15 @@ class InputUserValidationListener
         }
 
        // /api/user-login/callback
-        if ( $path === '/api/user-login/callback'  && $method === 'POST') {
-
+        if ( $path === '/api/user-login/callback'  && $method === 'POST') {            
             $data = json_decode($request->getContent(), true);
 
             $requiredFields = ['signature', 'publicId', 'email', 'processId'];
             $errors = [];
-            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);           
+            ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);        
+            ValidationListenerHelper::validateEmail($data, $errors);
+            ValidationListenerHelper::validateProcessId($data, $errors);
+        //    ValidationListenerHelper::validateUserPublicId($data, $errors);   
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
@@ -67,7 +68,6 @@ class InputUserValidationListener
             return;
         }    
         
-       // /api/user-login/new-qr , /api/user-login/check
         if ( ($path === '/api/user-login/new-qr' || $path === '/api/user-login/check') && $method === 'POST') {
 
             $data = json_decode($request->getContent(), true);

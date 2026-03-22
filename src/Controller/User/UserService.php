@@ -13,6 +13,7 @@ use App\Repository\ProcessRepository;
 use App\Repository\UserRepository;
 use App\DTO\RegistrationProcessDTO;
 use App\Repository\OwnClientRepository;
+use \Symfony\Component\HttpFoundation\JsonResponse;
 
 class UserService
 {
@@ -27,100 +28,140 @@ class UserService
         private OwnClientRepository $ownClientRepository
     ) {}
 
-    public function getQrCode($process, $corporateIdentification, $userPublicId = null)
+    /**
+     * Requests a QR code for a user registration or authentication process.
+     *
+     * @param string $process
+     * @param array $corporateIdentification
+     * @param string|null $userPublicId
+     * @return array
+     */
+    public function getQrCode(string $process, array $corporateIdentification = [], ?string $userPublicId = null): array
     {
-        [
-            'publicId' => $publicId,
-            'domain'   => $domain,
-            'hmac'     => $hmac,
-        ] = $this->getPublicIdDomainHmac($corporateIdentification);
+        $response = $this->prepareSecurePostRequest($process, $corporateIdentification, $userPublicId);
+        $this->logger->critical('response data', ['response' => $response]);
 
-        $response = $this->authorizationControllService->getSecurePostRequest([
-            $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
-        ]);
-        
-        $authorizedData = $this->authorizationControllService->controllAuthorization($response);
+        $authorizedData = $this->authorizationControllService->controllAuthorization($response);        
+        $this->logger->critical('Authorized data', ['authorizedData' => $authorizedData]);
         $this->saveProcess($process, $authorizedData);
-
+        
         return $authorizedData;
     }
 
-    public function getNfcUsers($process, $corporateIdentification, $userPublicId = null)
+    /**
+     * Requests NFC user data for a process.
+     *
+     * @param string $process
+     * @param array $corporateIdentification
+     * @param string|null $userPublicId
+     * @return mixed
+     */
+    public function getNfcUsers(string $process, array $corporateIdentification = [], ?string $userPublicId = null): JsonResponse
     {
+        return $this->prepareSecurePostRequest($process, $corporateIdentification, $userPublicId);
+    }
+
+    private function prepareSecurePostRequest(string $process, array $corporateIdentification = [], ?string $userPublicId = null): JsonResponse {
         [
             'publicId' => $publicId,
             'domain'   => $domain,
             'hmac'     => $hmac,
         ] = $this->getPublicIdDomainHmac($corporateIdentification);
-
         
-        $response = $this->authorizationControllService->getSecurePostRequest([
-            $process => $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId),
-        ]);
-
-        return $response;
+        $payload = $this->getRequestPayload($publicId, $hmac, $domain, $userPublicId);
+        
+        return $this->authorizationControllService->getSecurePostRequest([
+            $process => $payload]);     
     }
 
+    /**
+     * Allows a user to proceed with login if their registration process is valid and verified.
+     *
+     * @param RegistrationProcessDTO $authorizedUser
+     * @return bool
+     */
     public function allowSetUserLoginProcess(RegistrationProcessDTO $authorizedUser): bool
     {
-        $ok = $this->sslValidation($authorizedUser);
-
-        if ($ok === 1) {
-            $this->logger->critical("The signature is valid.");
-
-            $registrationUser = $this->userRepository->findOneBy([
-                'email' => $authorizedUser->getEmail(),
-                'publicId' => $authorizedUser->getPublicId()
-            ]);
-
-            if (!$registrationUser) {
-                $this->logger->critical('User not found');
-                return false;
-            }
-
-            $registrationUser->setProcess($authorizedUser->getProcessId());
-            $registrationUser->setAllowed(true);
-
-            $this->entityManager->persist($registrationUser);
-            $this->entityManager->flush();
-
-            return true;
+        if ($this->sslValidation($authorizedUser) !== 1) {
+            return $this->logVerificationError();
         }
 
-        return $this->logVerificationError($ok);
+        $this->logger->critical("The signature is valid.");
+
+        $registrationUser = $this->userRepository->findOneBy([
+            'email' => $authorizedUser->getEmail(),
+            'publicId' => $authorizedUser->getPublicId()
+        ]);
+
+        if (!$registrationUser) {
+            $this->logger->critical('User not found');
+            return false;
+        }
+
+        $registrationUser->setProcess($authorizedUser->getProcessId());
+        $registrationUser->setAllowed(true);
+
+        $this->entityManager->persist($registrationUser);
+        $this->entityManager->flush();
+
+        return true;        
     }
 
-    public function createUser(RegistrationProcessDTO $process)
+    /**
+     * Creates a new user entity if the registration process is valid and verified.
+     *
+     * @param RegistrationProcessDTO $process
+     * @return bool
+     */
+    public function createUser(RegistrationProcessDTO $process): bool
     {
-        $ok = $this->sslValidation($process);
-
-        if ($ok === 1) {
-
-            $user = new User();
-            $user->setEmail($process->getEmail());
-            $user->setProcess($process->getProcessId());
-            $user->setPublicId($process->getPublicId());
-
-            $this->entityManager->persist($user);
-            $this->entityManager->flush();
-
-            return true;
+        if ($this->sslValidation($process) !== 1) {
+            return $this->logVerificationError();
         }
 
-       return  $this->logVerificationError($ok);        
-    }    
+        $user = new User();
+        $user->setEmail($process->getEmail());
+        $user->setProcess($process->getProcessId());
+        $user->setPublicId($process->getPublicId());
 
-    private function saveProcess($process, $authorizedData){
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        return true;
+    }
+
+    /**
+     * Saves a process entity for tracking registration or domain processes.
+     *
+     * @param string $process
+     * @param array $authorizedData
+     * @return void
+     */
+    private function saveProcess(string $process, array $authorizedData): void {
         $saveProcess = new Process();
         $processId = $process == 'user_registration'  ? 'registrationProcessId' : 'domainProcessId';
-        $saveProcess->setProcessId($authorizedData[$processId]);
+        $idValue = $authorizedData[$processId] ?? null;
+        if ($idValue === null) {
+            $this->logger->error("Missing process id key '$processId' in authorizedData", ['authorizedData' => $authorizedData]);
+            return;
+        }
+        $saveProcess->setProcessId($idValue);
         $saveProcess->setAllowed(false);
 
         $this->entityManager->persist($saveProcess);
         $this->entityManager->flush();
     }
 
-    private function getRequestPayload($publicId, $registrationIdentity, $domain, $userPublicId = null): array{
+    /**
+     * Builds the request payload for secure backend communication.
+     *
+     * @param string $publicId
+     * @param string $registrationIdentity
+     * @param string $domain
+     * @param string|null $userPublicId
+     * @return array
+     */
+    private function getRequestPayload(string $publicId, string $registrationIdentity, string $domain, ?string $userPublicId = null): array {
         return [
             'corporatePublicId' => $publicId,
             'corporateAuthentication' => $registrationIdentity,
@@ -129,11 +170,17 @@ class UserService
         ];
     }
 
+    /**
+     * Returns the publicId, domain, and HMAC for a request.
+     *
+     * @param array $corporateIdentification
+     * @return array
+     */
     private function getPublicIdDomainHmac(array $corporateIdentification = []): array
     {
         if (empty($corporateIdentification)) {
             return [
-                'publicId' => $this->instanceSettingsService->getInstancePublicIc(),
+                'publicId' => $this->instanceSettingsService->getInstancePublicId(),
                 'domain'   => $this->instanceSettingsService->getInstanceDomain(),
                 'hmac'     => $this->authorizationControllService->generateRequestIdentity(),
             ];
@@ -145,8 +192,14 @@ class UserService
             'hmac'     => $corporateIdentification['hmac'] ?? null,
         ];
     }
-
-    private function sslValidation(RegistrationProcessDTO $process):int|false
+    
+    /**
+     * Validates the SSL signature of a registration process using the corporate public key.
+     *
+     * @param RegistrationProcessDTO $process
+     * @return int|false
+     */
+    private function sslValidation(RegistrationProcessDTO $process): int|false
     {
         $recivedSignature = base64_decode($process->getSignature());
 
@@ -167,13 +220,14 @@ class UserService
         return openssl_verify($userIdentity, $recivedSignature, $publicKey, OPENSSL_ALGO_SHA256);
     }
 
-    private function logVerificationError($ok): false
+    /**
+     * Logs signature verification errors and always returns false.
+     *
+     * @return false
+     */
+    private function logVerificationError(): false
     {
-        if ($ok === 0) {
-            $this->logger->critical("The signature is invalid.");
-        } else {
-            $this->logger->critical("An error occurred during verification.");
-        }
+        $this->logger->critical("An error occurred during verification.");        
         return false;
-    }    
+    }
 }

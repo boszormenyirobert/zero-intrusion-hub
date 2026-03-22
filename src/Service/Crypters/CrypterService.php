@@ -22,11 +22,16 @@ final class CrypterService
     }
 
     /**
-     * Encrypt data using AES-256-CBC
+     * Encrypts the current data property using AES-256-CBC symmetric encryption.
+     * The method serializes the data to JSON, encrypts it with the configured key and IV,
+     * and returns a base64-encoded string containing the IV (16 bytes) followed by the encrypted data.
+     *
+     * @return string Base64-encoded IV + encrypted data
+     * @throws \RuntimeException If encryption fails
      */
     public function encryptData(): string
     {
-        $plaintext = json_encode($this->data);
+        $plaintext = json_encode($this->data, JSON_THROW_ON_ERROR);
         $encrypted = openssl_encrypt($plaintext, self::CIPHER, $this->key, 0, $this->iv);
 
         if ($encrypted === false) {
@@ -77,7 +82,7 @@ final class CrypterService
      */
     private function decodeJson(string $data): array
     {
-        $decoded = json_decode($data, true);
+        $decoded = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException('JSON decoding failed: ' . json_last_error_msg());

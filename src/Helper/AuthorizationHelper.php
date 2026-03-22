@@ -9,38 +9,25 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class AuthorizationHelper
 {
-    private $service_api_key = null;
-    private $service_api_secret = null;
-    private $ivBase64 = null;
-    private HttpClientInterface $client;
-    private $logger;
+    private string $ivBase64;
 
     /**
-     * Constructor for AuthorizationHelper.
-     *
      * Sets up the helper with API keys, secret, and logger for HMAC and encryption operations.
-     *
      * Called from: AuthorizationControllService (getAuthorizationHelper)
      */
     public function __construct(
-        HttpClientInterface $client,
-        $service_api_secret,
-        $service_api_key,
-        LoggerInterface $logger
+        private HttpClientInterface $client,
+        private string $service_api_secret,
+        private string $service_api_key,
+        private LoggerInterface $logger
     ) {
-        $this->client = $client;
-        $this->service_api_secret = $service_api_secret;
-        $this->service_api_key = $service_api_key;
         $this->ivBase64 = $this->setIvBase64();
-        $this->logger = $logger;
     }
 
     // TODO extend to be able to use by the QR-API generation => All registrated corporate should use HMAC by QR-Code request
     /**
      * Generates an HMAC authorization header for a given encrypted data payload.
-     *
      * Used to authenticate requests to the backend API.
-     *
      * Called from: AuthorizationControllService (getSecurePostRequest)
      *
      * @param mixed $encryptedData The encrypted data object
@@ -49,24 +36,32 @@ final class AuthorizationHelper
     public function getAuthHeader($encryptedData): string
     {
         $encryptedDataValue = $encryptedData->encryptData();
-
         $ivBase64 = $this->getIvBase64();
+        $message = $this->getMessage($encryptedDataValue, $ivBase64);
+        $signature = $this->buildSignature($message);
 
-        $message = "$encryptedDataValue|$ivBase64";
-        $signature = hash_hmac('sha256', $message, $this->service_api_secret);
-        $authorization = 'HMAC ' . $this->service_api_key . ':' . $signature  . ':' . time();;
+        return $this->createHmac($signature);
+    }
 
-        return $authorization;
+    private function getMessage($encryptedDataValue, $ivBase64): string {
+        return "$encryptedDataValue|$ivBase64";
+    }
+
+    private function buildSignature($message): string{
+        return hash_hmac('sha256', $message, $this->service_api_secret);
+    }
+
+    private function createHmac($signature): string{
+        return 'HMAC ' . $this->service_api_key . ':' . $signature  . ':' . time();
     }
 
     /**
      * Generates and returns a new random IV (base64 encoded) for encryption.
-     *
      * Used internally during construction and for each request.
      *
      * @return string Base64-encoded IV
      */
-    private function setIvBase64()
+    private function setIvBase64(): string
     {
         $iv = openssl_random_pseudo_bytes(16);
         return base64_encode($iv);
@@ -74,30 +69,34 @@ final class AuthorizationHelper
 
     /**
      * Returns the current IV (base64 encoded) used for encryption.
-     *
      * Called from: getAuthHeader, buildRequest
      *
      * @return string Base64-encoded IV
      */
-    public function getIvBase64()
+    public function getIvBase64(): string
     {
         return $this->ivBase64;
     }
     /**
      * Validates the HMAC authorization header in a backend API response.
-     *
      * Checks the HMAC signature and API key, returns success or error details.
-     *
      * Called from: AuthorizationControllService (controllAuthorization)
      *
      * @param mixed $data The data object containing the encrypted identity
      * @param Response $response The HTTP response from the backend API
      * @return array Success or error details
      */
-    public function controllAuthorizationHeader($data, $response)
+    public function controllAuthorizationHeader($data, $response): array
     {
         $encryptedData = $data->corporateIdentity;
         $decodedJsonData = json_decode($response->getContent(), true);
+        if (!isset($decodedJsonData['iv'])) {
+            return [
+                'success' => false,
+                'error' => 'Missing IV in response'
+            ];
+        }
+
         $ivBase64 = $decodedJsonData['iv'];
 
         // Header Authorization
@@ -109,16 +108,20 @@ final class AuthorizationHelper
         ];
 
 
-        $data = json_decode($response->getContent(), true);
         $headers = $response->headers->all();
         $authHeader = $headers['x-auth'][0] ?? null;
-
+        if (!$authHeader) {
+            return [
+                'success' => false,
+                'error' => 'Missing X-Auth header'
+            ];
+        }
 
         $matches = preg_split("/[ :]+/", $authHeader);
 
         if ($matches[0] !== "HMAC") {
             return ([
-                'succes' => false,
+                'success' => false,
                 'error' => "Invalid Authorization header"
             ]);
         }
@@ -127,7 +130,7 @@ final class AuthorizationHelper
 
         if (!isset($secretKeyStore[$apiKey])) {
             return ([
-                'succes' => false,
+                'success' => false,
                 'error' => 'Unknown API key'
             ]);
         }
@@ -140,7 +143,7 @@ final class AuthorizationHelper
 
         if (!hash_equals($expectedSignature, $recvSignature)) {
             return ([
-                'succes' => false,
+                'success' => false,
                 'error' => 'Invalid HMAC signature'
             ]);
         }
@@ -150,9 +153,7 @@ final class AuthorizationHelper
 
     /**
      * Builds and sends a POST request to the backend API with encrypted data and HMAC authorization.
-     *
      * Handles response parsing and error handling, returns a JsonResponse.
-     *
      * Called from: AuthorizationControllService (getSecurePostRequest)
      *
      * @param string $authorization HMAC authorization header
@@ -161,7 +162,7 @@ final class AuthorizationHelper
      * @param string|null $forwardedAuthHeader Optional forwarded extension auth header
      * @return JsonResponse The backend API response as JSON
      */
-    public function buildRequest(string $authorization, $encryptedData, $target, $forwardedAuthHeader = null)
+    public function buildRequest(string $authorization, $encryptedData, string $target, ?string $forwardedAuthHeader = null): JsonResponse
     {
         $header = [
             'Content-Type' => 'application/json',
@@ -182,43 +183,46 @@ final class AuthorizationHelper
                 'headers' => $header,
                 'body' => json_encode($payload, \JSON_THROW_ON_ERROR)
             ]);
-
-            $statusCode = $response->getStatusCode();
-            $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
-            $content = $response->getContent(false);
-
-            // If JSON response
-            if (str_contains($contentType, 'application/json')) {
-                $decoded = json_decode($content, true);
-
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                    $responseToReturn = new JsonResponse($decoded, $statusCode);
-
-                    if ($response->getHeaders(false)['x-auth'][0] ?? false) {
-                        $responseToReturn->headers->set('X-Auth', $response->getHeaders(false)['x-auth'][0]);
-                    }
-
-                    return $responseToReturn;
-                }
-            }
-
-            // If not JSON or invalid
-            return new JsonResponse([
-                'error' => 'Non-JSON or invalid response',
-                'status' => 403,
-                'raw' => 'content'
-            ], 403);
+            
+            return $this->handleResponse($response);
 
         } catch (\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface $e) {
-            // $response = $e->getResponse();
-            // $content = $response ? $response->getContent(false) : 'Unknown error';
-            // $statusCode = $response ? $response->getStatusCode() : 500;
-
             return new JsonResponse([
                 'error' => 'Request failed',
                 'status' => 403,
-                'responseBody' => 'content'
+                'responseBody' => $e->getMessage()
             ], 403);
         }
-    }        
+    }
+    
+    /**
+     * Handles the HTTP response, decodes JSON, and passes along X-Auth if present.
+     */
+    private function handleResponse($response): JsonResponse
+    {
+        $statusCode = $response->getStatusCode();
+        $contentType = $response->getHeaders(false)['content-type'][0] ?? '';
+        $content = $response->getContent(false);
+
+        // If JSON response
+        if (str_contains($contentType, 'application/json')) {
+            $decoded = json_decode($content, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $responseToReturn = new JsonResponse($decoded, $statusCode);
+
+                if ($response->getHeaders(false)['x-auth'][0] ?? false) {
+                    $responseToReturn->headers->set('X-Auth', $response->getHeaders(false)['x-auth'][0]);
+                }
+
+                return $responseToReturn;
+            }
+        }
+
+        return new JsonResponse([
+            'error' => 'Non-JSON or invalid response',
+            'status' => 403,
+            'raw' => $content
+        ], 403);
+    }    
 }

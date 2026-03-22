@@ -39,7 +39,7 @@ class AccountController extends AbstractController
         $token = $request->cookies->get('jwt_token');
         $jwtToken =  $jwtService->jwtValidation($token);
 
-        if($jwtToken && $user = $this->identifyUser($jwtToken)){
+        if($jwtToken && $user = $this->findUserFromToken($jwtToken)){
 
             $process = "get_registrated_business";
 
@@ -79,19 +79,30 @@ class AccountController extends AbstractController
         );
     }
 
-    private function identifyUser($jwtToken){
-        $userData = $this->userRepository->findOneBy([
-            'email' => $jwtToken['username']
-        ]);
+    /**
+     * Identifies a user by email from the JWT token.
+     * Returns publicId and email if found, otherwise false.
+     */
+    private function findUserFromToken(array $jwtToken): ?array
+    {
+        $email = $jwtToken['username'] ?? null;
 
-        if($userData){
-            return [
-                'publicId' => $userData->getPublicId(),
-                'email' => $userData->getEmail()
-            ];
+        if (!$email) {
+            return null;
         }
 
-        return false;
+        $user = $this->userRepository->findOneBy([
+            'email' => $email
+        ]);
+
+        if (!$user) {
+            return null;
+        }
+
+        return [
+            'publicId' => $user->getPublicId(),
+            'email' => $user->getEmail(),
+        ];
     }
 
     private function getSelectedSubscription($businessSubscription){   

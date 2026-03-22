@@ -17,6 +17,12 @@ use App\Exception\InvalidPropertyException;
 use App\Exception\InvalidInputException;
 use App\Exception\MissingKeyException;
 
+/**
+ * Event subscriber for handling and formatting exceptions globally.
+ *
+ * Converts thrown exceptions into JSON HTTP responses with appropriate status codes and messages.
+ * Handles custom domain exceptions and HTTP client exceptions for unified error output.
+ */
 class ExceptionSubscriber implements EventSubscriberInterface
 {
     public static function getSubscribedEvents(): array

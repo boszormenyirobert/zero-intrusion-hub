@@ -229,6 +229,28 @@ class ValidationListenerHelper
         }
     }
 
+    public static function validateEmail(array $data, array &$errors): void
+    {
+        if (!isset($data['email']) || !is_string($data['email']) || trim($data['email']) === '') {
+            $errors['email'] = 'Email is required and must be a non-empty string.';
+            return;
+        }
+        $email = trim($data['email']);
+
+        if (preg_match('/[\x00-\x1F\x7F]/', $email)) {
+            $errors['email_chars'] = 'Invalid characters in email.';
+            return;
+        }  
+        if (mb_strlen($email) > 254) {
+            $errors['email_length'] = 'Email too long.';
+            return;
+        }  
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email_format'] = 'Invalid email format.';
+            return;
+        }             
+    }
+
     public static function validateNoControlChars(array $data, array $fields, array &$errors): void
     {
         foreach ($fields as $field) {

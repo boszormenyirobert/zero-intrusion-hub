@@ -4,75 +4,10 @@ namespace App\Service\Shared;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Psr\Log\LoggerInterface;
-
 use App\Helper\UtilityHelper;
+use App\Service\Shared\WhiteListed;
 
-class RouteService
-    {
-
-    const PATH = [
-        'qrIdentity' => '/qr-identity',
-        'new' => '/new',
-        'state' => '/state',
-        'credential' => '/credential',
-        'getIdentity' => '/identity/create/initialize',
-        'users' => '/users'
-    ];
-
-    const ALLOWED_INTEGRITY_KEYS = [        
-        'domain_read_qr_identity' =>'domain_read_qr_identity',
-        'domain_read_credential' => 'domain_read_credential', 
-        'domain_read_credential_encrypted' => 'domain_read_credential_encrypted',
-        'domain_read_state' => 'domain_read_state',
-
-        'vault_read_qr_identity' => 'vault_read_qr_identity',
-        'vault_read_credential' => 'vault_read_credential',
-        'vault_read_state' => 'vault_read_state',
-        
-        'domain_delete_qr_identity' => 'domain_delete_qr_identity',
-        'domain_delete_credential' => 'domain_delete_credential',
-        'domain_delete_state' => 'domain_delete_state',
-
-        'vault_delete_qr_identity' => 'vault_delete_qr_identity',
-        'vault_delete_credential' => 'vault_delete_credential',
-        'vault_read_credential_encrypted' => 'vault_read_credential_encrypted',
-        'vault_delete_state' => 'vault_delete_state',        
-
-        'vault_edit_qr_identity' => 'vault_edit_qr_identity',
-        'vault_edit_credential' => 'vault_edit_credential',
-        'vault_edit_state' => 'vault_edit_state',     
-
-        'shared_registration_qr_identity' => 'shared_registration_qr_identity',
-        'shared_registration_new' => 'shared_registration_new',
-        'shared_registration_state' => 'shared_registration_state',
-
-        'user_registration' => 'user_registration',
-        'user_login' => 'user_login',
-        'api_nfc_users' => 'api_nfc_users',
-        'api_nfc_decrypt' => 'api_nfc_decrypt',
-
-        'get_registrated_business' => 'get_registrated_business',
-        'business_create' => 'business_create',
-
-        'one_touch_qr_identity' => 'one_touch_qr_identity',
-        'one_touch_identifier' => 'one_touch_identifier',
-        'one_touch_state' => 'one_touch_state',
-
-        // TODO: Missing refactoring
-        'getIdentity' => 'getIdentity',
-        'updateIdentity' => 'updateIdentity',
-        'firstSecret' => 'firstSecret',
-        'recoverySettings' => 'recoverySettings',
-        'replaceDevice' => 'replaceDevice',
-        'restorePin' => 'restorePin',
-        'browserRegistrationVaultIdentity' => 'browserRegistrationVaultIdentity'
-    ];
-
-
-    const NEW_ALLOWED_INTEGRITY_KEYS = [
-      // ?? Törölhetö teszteles utan  'userRegistrationHash' => 'shared_registration_state'
-    ];
-
+class RouteService {
     public function __construct(private LoggerInterface $logger,private ParameterBagInterface $params) {}
 
     public function mapRoute(array $dataIntegrity): string
@@ -84,7 +19,7 @@ class RouteService
                 + $this->getVaultEditRoutes()
                 + $this->getVaultDeleteRoutes()
                 + $this->getSystemHubRoutes()
-                + $this->geAccountRoutes()
+                + $this->getAccountRoutes()
                 + $this->getOneTouchRoutes()
                 + $this->getCorporateSubscriptionRoute(); // OLD implementation
 
@@ -104,87 +39,92 @@ class RouteService
     private function getOneTouchRoutes(): array
     {
         $base = $this->params->get('ZERO_INTRUSION_ONE_TOUCH');
-
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_identifier'] => [$base, 'identifier'],
-            RouteService::ALLOWED_INTEGRITY_KEYS['one_touch_state'] => [$base, RouteService::PATH['state']],
-        ];
-    }   
+        return $this->buildRouteMap($base, [
+            'one_touch_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'one_touch_identifier' => 'identifier',
+            'one_touch_state' => WhiteListed::PATH['state'],
+        ]);
+    }
 
     private function getDomainReadRoutes(): array
     {
         $base = $this->params->get('ZERO_INTRUSION_DOMAIN_READ_BASE');
-
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_credential_encrypted'] => [$base, 'credential/decrypted'],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_read_state'] => [$base, RouteService::PATH['state']],
-        ];
-    }   
+        return $this->buildRouteMap($base, [
+            'domain_read_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'domain_read_credential' => WhiteListed::PATH['credential'],
+            'domain_read_credential_encrypted' => 'credential/decrypted',
+            'domain_read_state' => WhiteListed::PATH['state'],
+        ]);
+    }
 
     private function getDomainDeleteRoutes(): array
     {
         $base = $this->params->get('ZERO_INTRUSION_DOMAIN_DELETE_BASE');
-
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_delete_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_delete_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['domain_delete_state'] => [$base, RouteService::PATH['state']],
-        ];
-    }   
+        return $this->buildRouteMap($base, [
+            'domain_delete_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'domain_delete_credential' => WhiteListed::PATH['credential'],
+            'domain_delete_state' => WhiteListed::PATH['state'],
+        ]);
+    }
 
     private function getSharedRegistrationRoutes(): array
     {
         $base = $this->params->get('ZERO_INTRUSION_SHARED_BASE');
-
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['shared_registration_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['shared_registration_new'] => [$base, RouteService::PATH['new']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['shared_registration_state'] => [$base, RouteService::PATH['state']],
-        ];
+        return $this->buildRouteMap($base, [
+            'shared_registration_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'shared_registration_new_to_encrypt' => WhiteListed::PATH['to_encrypt'],
+            'shared_registration_new' => WhiteListed::PATH['new'],
+            'shared_registration_state' => WhiteListed::PATH['state'],
+        ]);
     }
 
-    private function getVaultReadRoutes(){
+    private function getVaultReadRoutes(): array {
         $base = $this->params->get('ZERO_INTRUSION_VAULT_READ_BASE');
-
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_credential_encrypted'] => [$base, 'credential/decrypted'],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_read_state'] => [$base, RouteService::PATH['state']],
-        ];
+        return $this->buildRouteMap($base, [
+            'vault_read_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'vault_read_credential' => WhiteListed::PATH['credential'],
+            'vault_read_credential_encrypted' => 'credential/decrypted',
+            'vault_read_state' => WhiteListed::PATH['state'],
+        ]);
     }
-    private function getVaultEditRoutes(){
+
+    private function getVaultEditRoutes(): array {
         $base = $this->params->get('ZERO_INTRUSION_VAULT_EDIT_BASE');
+        return $this->buildRouteMap($base, [
+            'vault_edit_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'vault_edit_credential' => WhiteListed::PATH['credential'],
+            'vault_edit_state' => WhiteListed::PATH['state'],
+        ]);
+    }
 
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_edit_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_edit_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_edit_state'] => [$base, RouteService::PATH['state']],
-        ];
-    }    
-    private function getVaultDeleteRoutes(){
+    private function getVaultDeleteRoutes(): array {
         $base = $this->params->get('ZERO_INTRUSION_VAULT_DELETE_BASE');
+        return $this->buildRouteMap($base, [
+            'vault_delete_qr_identity' => WhiteListed::PATH['qrIdentity'],
+            'vault_delete_credential' => WhiteListed::PATH['credential'],
+            'vault_delete_state' => WhiteListed::PATH['state'],
+        ]);
+    }
 
-        return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_delete_qr_identity'] => [$base, RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_delete_credential'] => [$base, RouteService::PATH['credential']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['vault_delete_state'] => [$base, RouteService::PATH['state']],
-        ];
-    }    
+    private function buildRouteMap(string $base, array $keyToPath): array
+    {
+        $result = [];
+        foreach ($keyToPath as $key => $path) {
+            $result[WhiteListed::ALLOWED_INTEGRITY_KEYS[$key]] = [$base, $path];
+        }
+        return $result;
+    }
 
-    private function getCorporateSubscriptionRoute(){
+    private function getCorporateSubscriptionRoute(): array {
         return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['business_create'] => ["/api/registration/corporate","/business/create"],            
-            RouteService::ALLOWED_INTEGRITY_KEYS['getIdentity'] => ["/api/registration/corporate","/identity/create/initialize"],     
-            RouteService::ALLOWED_INTEGRITY_KEYS['updateIdentity'] => ["/api/registration/corporate","/identity/create/follow-up"],
-            RouteService::ALLOWED_INTEGRITY_KEYS['firstSecret'] => ["/api/secret","/new"],
-            RouteService::ALLOWED_INTEGRITY_KEYS['recoverySettings'] => ["/api/secret","/recovery-settings"],
-            RouteService::ALLOWED_INTEGRITY_KEYS['replaceDevice'] => ["/api/device","/replace"],
-            RouteService::ALLOWED_INTEGRITY_KEYS['restorePin'] => ["/api/device","/replace/pin"],
-            RouteService::ALLOWED_INTEGRITY_KEYS['browserRegistrationVaultIdentity'] => ["/api/vault","/registration/browser-identity"]
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['business_create'] => ["/api/registration/corporate","/business/create"],            
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['getIdentity'] => ["/api/registration/corporate","/identity/create/initialize"],     
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['updateIdentity'] => ["/api/registration/corporate","/identity/create/follow-up"],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['firstSecret'] => ["/api/secret","/new"],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['recoverySettings'] => ["/api/secret","/recovery-settings"],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['replaceDevice'] => ["/api/device","/replace"],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['restorePin'] => ["/api/device","/replace/pin"],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['browserRegistrationVaultIdentity'] => ["/api/vault","/registration/browser-identity"]
         ];
     }
     
@@ -193,19 +133,19 @@ class RouteService
         $base = $this->params->get('ZERO_INTRUSION_SYSTEM_HUB_BASE');
 
         return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['user_registration'] => [$base, '/registration' . RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['user_login'] => [$base, '/login' . RouteService::PATH['qrIdentity']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' , RouteService::PATH['users']],
-            RouteService::ALLOWED_INTEGRITY_KEYS['api_nfc_decrypt'] => ['/api/nfc' , 'decrypt']            
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['user_registration'] => [$base, '/registration' . WhiteListed::PATH['qrIdentity']],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['user_login'] => [$base, '/login' . WhiteListed::PATH['qrIdentity']],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['api_nfc_users'] => ['/api/nfc' , WhiteListed::PATH['users']],
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['api_nfc_decrypt'] => ['/api/nfc' , 'decrypt']            
         ];
     }
 
-    private function geAccountRoutes(): array
+    private function getAccountRoutes(): array
     {
         $base = $this->params->get('ZERO_INTRUSION_ACCOUNT');
 
         return [
-            RouteService::ALLOWED_INTEGRITY_KEYS['get_registrated_business'] => [$base, '/all']           
+            WhiteListed::ALLOWED_INTEGRITY_KEYS['get_registrated_business'] => [$base, '/all']           
         ];
     }    
 

@@ -42,10 +42,10 @@ class LoginController extends AbstractController
         Request $request
         ) {  
 
-        $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();
-
+        $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();       
         $oneTouchUsers = [];
         $form = null;
+        $this->logger->critical('POST data', ['post' => $request->request->all()]);
 
         // oneTouchUsers
         if ($request->isMethod('POST')) {
@@ -89,7 +89,6 @@ class LoginController extends AbstractController
         $form = $formBuilder->getForm();
         $userPublicId = null;
 
-
         // First POST
         if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
             $userPublicId = $form->get('selectedUser')->getData();
@@ -101,19 +100,34 @@ class LoginController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $userPublicId = $form->get('selectedUser')->getData();
             // This send also the firebase notification to the user to auto login(From API) if the userPublicId is present
-            $authenticationByDropDown = $this->userService->getQrCode('user_login', [],  $userPublicId);       
-            return $this->redirectToRoute('instance_login', ['domainProcessId' =>$authenticationByDropDown['domainProcessId']]);       
+            $authenticationByDropDown = $this->userService->getQrCode('user_login', [],  $userPublicId);
+            $this->logger->critical('getQrCode response', ['response' => $authenticationByDropDown]);
+            $domainProcessId = is_array($authenticationByDropDown) && isset($authenticationByDropDown['domainProcessId']) ? $authenticationByDropDown['domainProcessId'] : '';
+            if ($domainProcessId !== '') {
+                $this->logger->critical('domainProcessId found', ['domainProcessId' => $domainProcessId]);
+                return $this->redirectToRoute('instance_login', ['domainProcessId' => $domainProcessId]);
+            } else {
+                $this->logger->critical('domainProcessId missing', ['response' => $authenticationByDropDown]);
+            }
+            return $this->redirectToRoute('instance_login', ['domainProcessId' => '']);
         }
 
         $authenticationByQr = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
+        // Defensive: always provide domainProcessId, even if missing
+        $domainProcessId = is_array($authenticationByQr) && isset($authenticationByQr['domainProcessId']) ? $authenticationByQr['domainProcessId'] : '';
+        if ($domainProcessId === '') {
+            $this->logger->critical('domainProcessId missing in authenticationByQr', ['response' => $authenticationByQr]);
+        }
+        $qrCode = is_array($authenticationByQr) && isset($authenticationByQr['qrCode']) ? $authenticationByQr['qrCode'] : '';
         $response = $this->render('views/users/user-login.html.twig', [
-            'authenticationByQr' => $authenticationByQr,
+            'authenticationByQr' => array_merge($authenticationByQr, ['qrCode' => $qrCode]),
             'authenticationByDropDown' => $authenticationByDropDown,
             'userLoginCsrf' => $token,
             'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
             'oneTouchUsers' => $oneTouchUsers,
             'form' => $form->createView(),
-            'userPublicId' => $userPublicId
+            'userPublicId' => $userPublicId,
+            'domainProcessId' => $domainProcessId
         ]);
 
         return $response;
