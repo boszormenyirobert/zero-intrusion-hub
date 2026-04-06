@@ -28,9 +28,15 @@ class RegistrationController extends AbstractController
     #[Route('/user-registration', name: 'user-registration', methods: "GET")]
     public function userRegistration() 
     {
+        $response = $this->userService->getQrCode("user_registration", []);
+        $this->logger->info('Login QR code generated', [
+            'response' => \json_encode($response, true),
+        ]);
         return $this->render('views/users/user-registration.html.twig', [
-            'qrCode' => $this->userService->getQrCode("user_registration", []),
-            'menuItem_instanceRegistration' => true
+            'qrCode' => $response,
+            'menuItem_instanceRegistration' => true,
+            'processId' => $response['registrationProcessId'] ?? null,
+            'action' => 'registration',
         ]);
     }
 }

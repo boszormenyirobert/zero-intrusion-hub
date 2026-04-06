@@ -13,11 +13,12 @@
 			<link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=123">
 		{% endblock %}
 			{{ encore_entry_link_tags('app') }}
-			{{ encore_entry_script_tags('app') }}
+		
 	</head>
 	<body>
 		<div class="container-fluid">
 			{% block container %}
+			
 				{{ include('partials/header.html.twig', { oneTouchActivation: oneTouchActivation is defined ? oneTouchActivation : false }) }}
 				<div id="content">
 					{% block content %}
@@ -38,7 +39,7 @@
 													</li>
 												{% endif %} 
 												<li>
-													{% if is_jwt_valid %}
+													{% if is_jwt_valid == true %}
 														<a href="/business">Business</a>
 													{% else %}
 														<a id="businessBtn" href="/business">Business</a>			
@@ -46,7 +47,7 @@
 												</li>		
 												
 												<li>
-													{% if is_jwt_valid %}
+													{% if is_jwt_valid == true %}
 														<a href="/account">Account</a>
 													{% else %}
 														<a id="accountBtn" href="/account">Account</a>									
@@ -65,46 +66,4 @@
 		</div>
 		{% block javascript %}{% endblock %}
 	</body>
-
-	<script>
-		// Hide One Touch Activation button if loggedInUserName and loggedInUserPublicId are present in the localStorage - OneTouchUsers
-			let loggedInUserEmail = "{{ userEmail|default('') }}";
-			let loggedInUserPublicId = "{{ userPublicId|default('') }}";
-		 oneTouchUsers = JSON.parse(localStorage.getItem("oneTouchUsers") || "[]");
-
-		oneTouchUsers.forEach(user => {
-			if(user.email === loggedInUserEmail && user.userPublicId === loggedInUserPublicId){
-				document.getElementById("oneTouchUserBtn").style.display = "none";
-			}
-		});
-
-
-		// Click on loginBtn || businessBtn => From get to post if oneTouchUsers are present in the localStorage
-		document.addEventListener('click', function(e) {
-			var loginBtn = document.getElementById("accountBtn");
-			var businessBtn = document.getElementById("businessBtn");
-
-				if ( (loginBtn && loginBtn.contains(e.target)) || (businessBtn && businessBtn.contains(e.target)) ) {	
-						
-				const oneTouchUsers = localStorage.getItem('oneTouchUsers');
-				if (oneTouchUsers) {
-					const form = document.createElement('form');
-					form.method = 'POST';
-					form.action = '/user-login';
-
-					const input = document.createElement('input');
-					input.type = 'hidden';
-					input.name = 'oneTouchUsers';
-					input.value = oneTouchUsers;
-
-					form.appendChild(input);
-					document.body.appendChild(form);
-					form.submit();
-				} else {
-					window.location.href = '/user-login';
-				}
-			}
-		});
-
-	</script>
 </html>

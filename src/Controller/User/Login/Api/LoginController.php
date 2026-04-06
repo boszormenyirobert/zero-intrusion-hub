@@ -40,7 +40,6 @@ class LoginController extends AbstractController
     ) {   
         $corporateIentification = $this->decodeRequest($request);
         $response = $this->userService->getQrCode('user_login', $corporateIentification, $corporateIentification['userPublicId'] ?? null);
-
         return $this->json($response);
     }    
 

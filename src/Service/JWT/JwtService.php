@@ -20,13 +20,26 @@ class JwtService
     public function jwtValidation(?string $token): ?array
     {
         if (empty($token)) {
+            $this->logger->info('JWT validation skipped because token is empty');
+
             return null;
         }
 
         try {
             $payload = $this->jwtEncoder->decode($token);
 
-            return is_array($payload) ? $payload : null;
+            if (!is_array($payload)) {
+                $this->logger->warning('JWT validation returned non-array payload');
+
+                return null;
+            }
+
+            $this->logger->info('JWT validation succeeded', [
+                'username' => $payload['username'] ?? null,
+                'public_id' => $payload['publicId'] ?? null,
+            ]);
+
+            return $payload;
 
         } catch (\Throwable $e) {
             $this->logger->warning('JWT decode failed', [

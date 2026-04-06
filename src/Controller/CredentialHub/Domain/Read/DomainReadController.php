@@ -22,8 +22,8 @@ use App\Controller\CredentialHub\BackendForwared;
  * 4. Use the /state endpoint to deliver the process status.
  *
  * Generally: The credentials retrieved from the mobile app in decrypted form are sent to the backend API for 
- * saving in a temporary table(auth_bridge) by the API encrypted form. 
- * The state endpoint is used to check the process status and retrieve the decrypted credential when ready from the temporary table(auth_bridge), 
+ * saving in Redis cache by the API encrypted form. 
+ * The state endpoint is used to check the process status and retrieve the decrypted credential when ready from Redis cache, 
  * and then delete it from it.
  */
 #[Route('/api/credential-hub/domain/read')]

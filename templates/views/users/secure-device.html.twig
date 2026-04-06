@@ -21,7 +21,7 @@
 <script>
     var userPublicId = "{{ userPublicId|e('js') }}";
     var userEmail = "{{ userEmail|e('js') }}";
-    var key = "oneTouchUsers";
+    var key = "users";
 
     function setOneTouchUsers(userPublicId, email, key) {
         const value = localStorage.getItem(key);
@@ -42,7 +42,7 @@
                 localStorage.setItem(key, JSON.stringify([newUser]));
             }
         } catch (e) {
-            console.error('[ExtensionStorageService] Error parsing oneTouchUsers for set operation:', e);
+            console.error('[ExtensionStorageService] Error parsing users for set operation:', e);
         }
     }
     setOneTouchUsers(userPublicId, userEmail, key);

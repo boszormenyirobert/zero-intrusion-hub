@@ -40,7 +40,7 @@ class UserService
     {
         $response = $this->prepareSecurePostRequest($process, $corporateIdentification, $userPublicId);
         $authorizedData = $this->authorizationControllService->controllAuthorization($response);        
-        $this->saveProcess($process, $authorizedData);
+       // $this->saveProcess($process, $authorizedData); => The process table can be deleted
         
         return $authorizedData;
     }
@@ -80,10 +80,12 @@ class UserService
     public function allowSetUserLoginProcess(RegistrationProcessDTO $authorizedUser): bool
     {
         if ($this->sslValidation($authorizedUser) !== 1) {
+            $this->logger->error("The signature is invalid.");           
+
             return $this->logVerificationError();
         }
 
-        $this->logger->error("The signature is valid.");
+        $this->logger->info("The signature is valid.");
 
         $registrationUser = $this->userRepository->findOneBy([
             'email' => $authorizedUser->getEmail(),
@@ -186,7 +188,7 @@ class UserService
         return [
             'publicId' => $corporateIdentification['publicId'] ?? null,
             'domain'   => $corporateIdentification['domain'] ?? null,
-            'hmac'     => $corporateIdentification['hmac'] ?? null,
+            'hmac'     => $corporateIdentification['hmac'] ?? "",
         ];
     }
     

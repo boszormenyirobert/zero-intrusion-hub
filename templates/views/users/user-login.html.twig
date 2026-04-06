@@ -22,76 +22,11 @@
             No passwords, no hassle — just one tap to access.
         </p>
         
-         <h2 data-domain-process-id-target="domainProcessId"></h2>       
-
-                {% set userChoices = form.selectedUser.vars.choices|filter(c => c.value is not empty) %}
-                {%  if form is not null and userChoices|length > 0 %}
-                        <div class="form-placeholder">
-                            {{ form_start(form) }}
-                            {{ form_row(form.selectedUser, {'attr': {'required': 'required', 'onchange': 'this.form.submit();'}}) }}
-                            {% if form.oneTouchUsersHidden is defined %}
-                                {{ form_row(form.oneTouchUsersHidden) }}
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary" style="display:none">Login</button>               
-                            {{ form_end(form) }}
-                        </div>
-                {% endif %}
-        <div 
-            data-controller="test"
-            data-test-check-url-value="{{ path('user_login_check') }}"
-            data-test-renew-url-value="{{ path('user_login_new_qr') }}"
-            data-test-domain-process-id-value="{{ domainProcessId|default('') }}"
-            data-test-user-login-csrf-value="{{ userLoginCsrf }}"
-        >
-            <img style="display: block; margin: auto;" data-test-target="qrCode" src="data:image/png;base64,{{ authenticationByQr['qrCode']|default('') }}" alt="QR Code">
-            <button data-action="click->test#renew">Renew</button>
-            <p data-test-target="response"></p>
-        </div>
+      <div class="qr-container">
+        <h2 id="response"></h2>
+        <img src="data:image/png;base64,{{ qrCode }}" alt="QR Registration Code">
+    </div>
         
     </section> 
-
-
-<script>
-userLoginPath = new URLSearchParams(window.location.search);
-domainProcessId = userLoginPath.get('domainProcessId');
-
-/**
- *  Polling every 2 seconds to check if the user has authenticated successfully.
- */ 
-if(domainProcessId){
-    setInterval(function() {
-            fetch(`/user-login/check?processId=${domainProcessId}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Network error: " + response.status);
-                    return response.json();
-                })
-                .then(data => {                
-                    if (data.message === "Authentication success.") {
-                        window.location.href = "/";
-                    }                
-                })
-                .catch(error => {
-                    console.error("Fetch failed:", error);
-                });
-        }, 2000);
-}
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        const controllerElement = document.querySelector('[data-controller="test"]');
-        if (controllerElement && controllerElement.controller) {
-            controllerElement.controller.check();
-        } else if (window.application && window.application.getControllerForElementAndIdentifier) {
-            // For Stimulus 3+ compatibility
-            const controller = window.application.getControllerForElementAndIdentifier(controllerElement, 'test');
-            if (controller && controller.check) {
-                controller.check();
-            }
-        }
-    }, 4000);
-});
-</script>
 
 {% endblock %}

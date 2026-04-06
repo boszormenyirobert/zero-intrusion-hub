@@ -4,7 +4,6 @@
  *
  * Responsibilities:
  * - Generates QR codes for login and supports optional userPublicId for auto-login via Firebase.
- * - Provides a dropdown-based one-touch login selection for multiple users.
  * - Polls the database to confirm login status via JavaScript.
  * - Logs out users and clears JWT cookies.
  * - Manages CSRF token validation for secure login workflows.
@@ -13,189 +12,67 @@ namespace App\Controller\User\Login\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Controller\User\UserService;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\Cookie;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 class LoginController extends AbstractController
 {
     public function __construct(
-        private LoggerInterface $logger,
-        private UserService $userService
+        private LoginService $loginService
     ) {}
 
     /*
-    * API endpoint called from the HUB frontend to generate a QR code for login.
+    * The endpoint called from the HUB frontend to generate a QR code for login.
     * The userPublicId is optional and can be used to notify a specific user via Firebase for auto-login.
     * Firebase notification is handled by the API.
     */
-    #[Route('/user-login', name: 'instance_login', methods: ["GET","POST"] )]
+    #[Route('login', name: 'instance_login', methods: ["GET"] )]
     public function login(
-        CsrfTokenManagerInterface $csrfTokenManager, 
         Request $request
         ) {  
+        $viewData = $this->loginService->buildLoginViewData(
+            $request,
+            (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+        );
 
-        $token = $csrfTokenManager->getToken('userLoginCsrf')->getValue();       
-        $oneTouchUsers = [];
-        $form = null;
-
-        // oneTouchUsers
-        if ($request->isMethod('POST')) {
-            if ($request->request->has('oneTouchUsers')) {
-                $oneTouchUsersJson = $request->request->get('oneTouchUsers');
-                $oneTouchUsers = json_decode($oneTouchUsersJson, true);
-            } elseif ($request->request->has('oneTouchUsersHidden')) {
-                $oneTouchUsersJson = $request->request->get('oneTouchUsersHidden');
-                $oneTouchUsers = json_decode($oneTouchUsersJson, true);
-            } elseif ($request->request->has('form')) {
-                $formData = $request->request->all('form');
-                if (isset($formData['oneTouchUsersHidden'])) {
-                    $oneTouchUsers = json_decode($formData['oneTouchUsersHidden'], true) ?? [];
-                }
-            }
+        if ($viewData === null) {
+            return null;
         }
 
-        // Dropdown choices preparation from oneTouchUsers
-        $choices = [];
-        foreach ($oneTouchUsers as $user) {
-            if (isset($user['email'], $user['userPublicId'])) {
-                $choices[$user['email']] = $user['userPublicId'];
-            }
-        }
-
-        $formBuilder = $this->createFormBuilder(null, [
-            'csrf_protection' => true,
-        ]);
-        $formBuilder
-            ->add('selectedUser', ChoiceType::class, [
-                'choices' => $choices,
-                'placeholder' => 'Select a user',
-                'required' => true,
-            ]);
-
-        // Hidden field always by POST request to keep the oneTouchUsers data for the second POST when the dropdown form is submitted
-        $formBuilder->add('oneTouchUsersHidden', \Symfony\Component\Form\Extension\Core\Type\HiddenType::class, [
-            'data' => json_encode($oneTouchUsers),
-            'mapped' => false,
-        ]);
-        $form = $formBuilder->getForm();
-        $userPublicId = null;
-
-        // First POST
-        if ($request->isMethod('POST') && $request->request->has('selectedUser')) {       
-            $userPublicId = $form->get('selectedUser')->getData();
-        }
-        $form->handleRequest($request);
-
-        // Second POST: Twig form submit        
-        $authenticationByDropDown ="";
-        if ($form->isSubmitted() && $form->isValid()) {
-            $userPublicId = $form->get('selectedUser')->getData();
-            // This send also the firebase notification to the user to auto login(From API) if the userPublicId is present
-            $authenticationByDropDown = $this->userService->getQrCode('user_login', [],  $userPublicId);
-            $domainProcessId = is_array($authenticationByDropDown) && isset($authenticationByDropDown['domainProcessId']) ? $authenticationByDropDown['domainProcessId'] : '';
-            if ($domainProcessId !== '') {
-                return $this->redirectToRoute('instance_login', ['domainProcessId' => $domainProcessId]);
-            } else {
-                $this->logger->info('domainProcessId missing', ['response' => $authenticationByDropDown]);
-            }
-            return $this->redirectToRoute('instance_login', ['domainProcessId' => '']);
-        }
-
-        $authenticationByQr = $this->userService->getQrCode('user_login', [],  $request->request->get('oneTouchUsers'));
-        // Defensive: always provide domainProcessId, even if missing
-        $domainProcessId = is_array($authenticationByQr) && isset($authenticationByQr['domainProcessId']) ? $authenticationByQr['domainProcessId'] : '';
-        if ($domainProcessId === '') {
-            $this->logger->info('domainProcessId missing in authenticationByQr', ['response' => $authenticationByQr]);
-        }
-        $qrCode = is_array($authenticationByQr) && isset($authenticationByQr['qrCode']) ? $authenticationByQr['qrCode'] : '';
-        $response = $this->render('views/users/user-login.html.twig', [
-            'authenticationByQr' => array_merge($authenticationByQr, ['qrCode' => $qrCode]),
-            'authenticationByDropDown' => $authenticationByDropDown,
-            'userLoginCsrf' => $token,
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
-            'oneTouchUsers' => $oneTouchUsers,
-            'form' => $form->createView(),
-            'userPublicId' => $userPublicId,
-            'domainProcessId' => $domainProcessId
-        ]);
-
-        return $response;
+        return $this->render('views/users/user-login.html.twig', $viewData);
     }
 
     /*
     * Polls the database to check if the user has confirmed the login via JavaScript.
+    * action can be 'login' or 'registration' to differentiate between login and registration processes.
+    * If login is confirmed, generates a JWT token, sets it in a cookie, and resets the user's allowed status to prevent reuse of the same QR code.
+     * If registration is confirmed, simply returns a success message.
     */
-    #[Route('/user-login/check', name: 'user_login_check', methods: "GET")]
-    public function userJSCheck(
+    #[Route('/login/check', name: 'user_login_check', methods: "GET")]
+    public function pollStateByFrontend(
         Request $request,
-        CsrfTokenManagerInterface $csrfTokenManager,
         UserRepository $userRepository,
         JWTTokenManagerInterface $jwtManager
     )
     {
-        $processId = $request->query->get('processId');
-        $user = $userRepository->findOneBy([
-            'process' => $processId
-        ]);
-       
-        if($user && $user->isAllowed()){            
-            $token = $jwtManager->create($user);
-            $response = new JsonResponse([
-                'message' => 'Authentication is success',
-                'jwt_token' => $token
-            ]);
-
-            $cookie = new Cookie(
-                'jwt_token',
-                $token,
-                time() + 3600, // expire in 1h
-                '/',
-                null,
-                false,  // secure (set to true on HTTPS)
-                true,   // httpOnly
-                false,
-                'Strict'
-            );
-
-            $response = $this->json([
-                'message' => 'Authentication success.'
-            ]);
-
-            $response->headers->setCookie($cookie);
-
-            return $response;
-        }
-
-        return $this->json([
-            'message' => 'Waiting for authentication.',
-            'processId' => $processId
-        ], 200);
+        return $this->loginService->buildFrontendPollResponse(
+            $request,
+            $userRepository,
+            $jwtManager
+        );
     }
 
     /*
     * Logs out the user and clears the JWT cookie when the logout link is clicked.
     */
     #[Route('/user-logout', name: 'instance_logout', methods: "GET")]
-    public function logout(CsrfTokenManagerInterface $csrfTokenManager) {       
+    public function logout(CsrfTokenManagerInterface $csrfTokenManager, Request $request) {
         $csrfTokenManager->removeToken('userLoginCsrf');
-    
-        $response = new Response();
-        $response->headers->clearCookie('jwt_token');
 
-        $html = $this->renderView('views/users/user-logged-out.html.twig', [
-            'logout' => true,
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
-        ]);
-
-        $response->setContent($html);
+        $response = $this->redirectToRoute('home');
+        $this->loginService->prepareLogoutResponse($response, $request);
 
         return $response;
     }    

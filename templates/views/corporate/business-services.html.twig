@@ -19,7 +19,7 @@
 
 			{{ form_row(form_psw_manager._token) }}
 			{# ensures CSRF token is included #}
-			<button type="submit">Request Business Unit Basic</button>
+			<button class="business-btn" type="submit">Request Business Unit Basic</button>
 
 				{{ form_end(form_psw_manager) }}
 
@@ -37,7 +37,7 @@
 
 			{{ form_row(form_biometric._token) }}
 			{# ensures CSRF token is included #}
-			<button type="submit">Request Business Unit Basic</button>
+			<button class="business-btn" type="submit">Request Business Unit Basic</button>
 
 				{{ form_end(form_biometric) }}
 
@@ -55,7 +55,7 @@
 
 			{{ form_row(form_business_basic._token) }}
 			{# ensures CSRF token is included #}
-			<button type="submit">Request Business Unit Basic</button>
+			<button class="business-btn" type="submit">Request Business Unit Basic</button>
 
 				{{ form_end(form_business_basic) }}
 
@@ -72,7 +72,7 @@
 
 			{{ form_row(form_business_plus._token) }}
 			{# ensures CSRF token is included #}
-			<button type="submit">Request Business Unit Plus</button>
+			<button class="business-btn" type="submit">Request Business Unit Plus</button>
 
 				{{ form_end(form_business_plus) }}
 		</section>
@@ -88,7 +88,7 @@
 
 			{{ form_row(form_business_pro._token) }}
 			{# ensures CSRF token is included #}
-			<button type="submit">Request Business Unit Plus</button>
+			<button class="business-btn" type="submit">Request Business Unit Plus</button>
 				{{ form_end(form_business_pro) }}
 		</section>
 	{% endif %}
@@ -109,7 +109,7 @@
 					</div>
 				{% endfor %}
 			</div>
-			<a href="{{ url('instance_registration_follow_up') }}"><button type="submit">Registration confirmation</button></a>
+			<a href="{{ url('instance_registration_follow_up') }}"><button class="business-btn" type="submit">Registration confirmation</button></a>
 		</section>
 	{% endif %}	
 {% endblock %}

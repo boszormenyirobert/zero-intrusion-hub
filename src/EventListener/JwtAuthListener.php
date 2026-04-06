@@ -45,6 +45,7 @@ class JwtAuthListener
 
         $request = $event->getRequest();
         $jwtToken = $request->cookies->get('jwt_token') ?? '';
+        $route = $request->attributes->get('_route');
 
         $isValid = false;
 
@@ -53,7 +54,17 @@ class JwtAuthListener
 
             $isValid = $payload !== false;
 
+            $this->logger->info('Protected route JWT evaluated', [
+                'route' => $route,
+                'is_jwt_valid' => $isValid,
+                'username' => is_array($payload) ? ($payload['username'] ?? null) : null,
+            ]);
+
             if (!$isValid && !empty($attributes)) {
+                $this->logger->warning('Protected route denied because JWT is invalid', [
+                    'route' => $route,
+                ]);
+
                 $event->setController(function () {
                     return new RedirectResponse(
                         $this->urlGenerator->generate('instance_login')
@@ -61,6 +72,11 @@ class JwtAuthListener
                 });
             }
         } catch (\Exception $e) {
+            $this->logger->error('Protected route JWT decoding failed', [
+                'route' => $route,
+                'exception' => $e->getMessage(),
+            ]);
+
             if (!empty($attributes)) {
                 $event->setController(function () {
                     return new RedirectResponse(

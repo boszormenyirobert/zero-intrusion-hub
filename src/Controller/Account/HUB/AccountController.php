@@ -9,111 +9,49 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use App\Repository\UserRepository;
-use App\Service\JWT\JwtService;
-use Psr\Log\LoggerInterface;
 
 class AccountController extends AbstractController
 {
     public function __construct(
-        private JWTEncoderInterface $jwtEncoder,
-        private UserRepository $userRepository,
-        private LoggerInterface $logger
+        private AccountService $accountService
     ) {}
 
     /**
-     * Handles authenticated business account requests.
+     * Handles authenticated account requests.
      * Validates JWT and identifies user by email.
      * Fetches business subscription/account data from backend and decodes the response.
      * Renders the account view with subscription and account info.
      * If JWT is invalid or user not found, redirects to login (used only once by HUB initialization).
      */
     #[Route('/account', name: 'account')]
-    public function business(
+    public function account(
         Request $request,
-        UserRegistrationService $userRegistrationService,
-        JwtService $jwtService
+        UserRegistrationService $userRegistrationService
     ): Response 
     { 
-        $token = $request->cookies->get('jwt_token');
-        $jwtToken =  $jwtService->jwtValidation($token);
+        $accountContext = $this->accountService->resolveAccountContext($request);
 
-        if($jwtToken && $user = $this->findUserFromToken($jwtToken)){
-
-            $process = "get_registrated_business";
-
-            /** @var Response $response */
-            $response = $userRegistrationService->forwardRegistration(
-                [$process =>  $user]
-            );
-            
-            $encodedContent = $response->getContent();
-            $businessSubscription = \json_decode($encodedContent, true);
-            if(!$businessSubscription || !isset($businessSubscription['businessSubscription'])){
-               $businessSubscription['accounts'] = [];
-               $businessSubscription['businessSubscription'] = [];
-            }
-        } else {
-            // Used only once by the HUB initialization process
-            return $this->redirect($this->generateUrl('instance_login'));
+        if ($accountContext === null) {
+            return $this->redirectToLogin();
         }
 
-        $pills = [
-            'pswManager'    => 'Password Manager',
-            'biometric'     => 'Secure biometric',
-            'basic' => 'Business Basic', 
-            'plus' => 'Business Plus', 
-            'pro' => 'Business Pro'
-        ];
+        $businessSubscription = $this->accountService->loadBusinessSubscription(
+            $userRegistrationService,
+            $accountContext['user']
+        );
 
         return $this->render(
             'views/containers/container-account.html.twig',
-            [                
-                'is_jwt_valid' => $jwtToken,
-                'accounts' => $businessSubscription['accounts'],
-                'businessSubscription' => $this->getSelectedSubscription($businessSubscription['businessSubscription']),
-                'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION'),
-                'pills' => $pills
-            ]
+            $this->accountService->buildAccountViewData(
+                $accountContext,
+                $businessSubscription,
+                (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+            )
         );
     }
 
-    /**
-     * Identifies a user by email from the JWT token.
-     * Returns publicId and email if found, otherwise false.
-     */
-    private function findUserFromToken(array $jwtToken): ?array
+    private function redirectToLogin(): Response
     {
-        $email = $jwtToken['username'] ?? null;
-
-        if (!$email) {
-            return null;
-        }
-
-        $user = $this->userRepository->findOneBy([
-            'email' => $email
-        ]);
-
-        if (!$user) {
-            return null;
-        }
-
-        return [
-            'publicId' => $user->getPublicId(),
-            'email' => $user->getEmail(),
-        ];
-    }
-
-    private function getSelectedSubscription($businessSubscription){   
-       
-        foreach($businessSubscription as $key => $value){
-            if($value === true){
-                $subscription['subscription'] = $key;
-                $subscription['id'] = $businessSubscription['id'];
-
-                return $subscription;
-            }
-        }        
+        return $this->redirect($this->generateUrl('instance_login'));
     }
 }
