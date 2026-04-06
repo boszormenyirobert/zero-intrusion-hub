@@ -7,9 +7,7 @@ monolog:
 
 when@dev:
     monolog:
-
         handlers:
-
             main:
                 type: stream
                 path: "%kernel.logs_dir%/dev.log"
@@ -38,11 +36,11 @@ when@dev:
                 type: stream
                 path: "%kernel.logs_dir%/deprecation.log"
                 channels: [deprecation]
-                
+
             console:
                 type: console
                 process_psr_3_messages: false
-                channels: ["!event", "!doctrine", "!console"]                
+                channels: ["!event", "!doctrine", "!console"]
 
 when@test:
     monolog:
@@ -60,34 +58,43 @@ when@test:
 
 when@prod:
     monolog:
-
         handlers:
-
             main:
-                type: fingers_crossed
-                action_level: error
-                handler: buffered
-                excluded_http_codes: [400, 401, 403, 404]
-
-            buffered:
-                type: buffer
-                handler: file_log
-                buffer_size: 50
-                flush_on_overflow: true
-
-            file_log:
                 type: stream
                 path: "%kernel.logs_dir%/prod.log"
                 level: debug
                 formatter: monolog.formatter.json
+                channels:
+                    - "!event"
+                    - "!doctrine"
+                    - "!security"
+                    - "!request"
+                    - "!http_client"
+                    - "!deprecation"
+
+            doctrine:
+                type: stream
+                path: "%kernel.logs_dir%/doctrine.log"
+                level: debug
+                formatter: monolog.formatter.json
+                channels: [doctrine]
+
+            http:
+                type: stream
+                path: "%kernel.logs_dir%/http.log"
+                level: info
+                formatter: monolog.formatter.json
+                channels: [http_client]
 
             deprecation:
                 type: stream
-                path: "%kernel.logs_dir%/deprecations.log"
+                path: "%kernel.logs_dir%/deprecation.log"
+                formatter: monolog.formatter.json
                 channels: [deprecation]
 
             security:
                 type: stream
                 path: "%kernel.logs_dir%/security.log"
                 level: warning
+                formatter: monolog.formatter.json
                 channels: [security]
