@@ -44,14 +44,15 @@ class InstanceService
         ];
     }
 
-    public function buildUsersViewData(Request $request, array $availiabilites, FormView $form): array
+    public function buildUsersViewData(Request $request, array $availiabilites, FormView $form, array $whitelistedUsers): array
     {
         $jwtContext = $this->buildJwtContext($request);
 
         return [
             'is_jwt_valid' => $jwtContext['isJwtValid'],
             'availabilities' => $availiabilites,
-            'form' => $form
+            'form' => $form,
+            'whitelistedUsers' => $whitelistedUsers,
         ];
     }
 

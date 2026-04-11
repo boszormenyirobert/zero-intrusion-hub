@@ -96,6 +96,14 @@ class LoginService
             );
         }
 
+        if ($this->isRejectedLogin($pollRequest['action'], $user)) {
+            return $this->buildRejectedLoginResponse(
+                $pollRequest['processId'],
+                $pollRequest['action'],
+                $user['reason'] ?? null
+            );
+        }
+
         return $this->buildFailedPollResponse($pollRequest['processId'], $pollRequest['action']);
     }
 
@@ -193,6 +201,11 @@ class LoginService
         return $action === 'registration' && is_array($user) && ($user['status'] ?? null) === 'rejected';
     }
 
+    private function isRejectedLogin(string $action, mixed $user): bool
+    {
+        return $action === 'login' && is_array($user) && ($user['status'] ?? null) === 'rejected';
+    }
+
     private function buildSuccessfulLoginResponse(
         object $user,
         JWTTokenManagerInterface $jwtManager,
@@ -242,6 +255,23 @@ class LoginService
         };
 
         $this->logger->warning('Frontend registration poll detected rejected registration', [
+            'route' => 'user_login_check',
+            'process' => $processId,
+            'action' => $action,
+            'reason' => $reason,
+        ]);
+
+        return new JsonResponse(['message' => $message]);
+    }
+
+    private function buildRejectedLoginResponse(string $processId, string $action, ?string $reason): JsonResponse
+    {
+        $message = match ($reason) {
+            'login_rejected_whitelist' => 'Authentication rejected: access has been revoked for this email address.',
+            default => 'Authentication rejected.',
+        };
+
+        $this->logger->warning('Frontend login poll detected rejected authentication', [
             'route' => 'user_login_check',
             'process' => $processId,
             'action' => $action,
@@ -374,6 +404,11 @@ class LoginService
                 break;
             }
 
+            if ($action === 'login' && $this->isLoginRejected($processId)) {
+                $response = $this->buildRejectedLoginState($processId);
+                break;
+            }
+
             if ((time() - $startTime) >= $maxWait) {
                 $this->logger->warning('Polling timed out without matching user state', [
                     'process' => $processId,
@@ -394,6 +429,11 @@ class LoginService
         return $this->processRepository->findRejectedRegistrationProcess($processId) !== null;
     }
 
+    private function isLoginRejected(string $processId): bool
+    {
+        return $this->processRepository->findRejectedLoginProcess($processId) !== null;
+    }
+
     private function buildRejectedRegistrationState(string $processId): array
     {
         $process = $this->processRepository->findRejectedRegistrationProcess($processId);
@@ -403,6 +443,25 @@ class LoginService
         }
 
         $this->logger->info('Detected rejected registration process during polling', [
+            'process' => $processId,
+            'reason' => $process->getAuthId(),
+        ]);
+
+        return [
+            'status' => 'rejected',
+            'reason' => $process->getAuthId(),
+        ];
+    }
+
+    private function buildRejectedLoginState(string $processId): array
+    {
+        $process = $this->processRepository->findRejectedLoginProcess($processId);
+
+        if ($process === null) {
+            return [];
+        }
+
+        $this->logger->info('Detected rejected login process during polling', [
             'process' => $processId,
             'reason' => $process->getAuthId(),
         ]);

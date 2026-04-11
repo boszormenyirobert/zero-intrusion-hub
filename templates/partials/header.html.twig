@@ -188,6 +188,24 @@
 						return;
 					}
 
+					if (typeof data?.message === "string" && data.message.startsWith("Authentication rejected")) {
+						const responseMessage = document.getElementById("response");
+						const timeoutMessage = document.getElementById("timeout");
+
+						if (responseMessage) {
+							responseMessage.textContent = data.message;
+							responseMessage.style.color = "#b42318";
+							if (timeoutMessage) {
+								timeoutMessage.style.display = "none";
+							}
+						} else if (timeoutMessage) {
+							timeoutMessage.textContent = data.message;
+							timeoutMessage.style.display = "block";
+						}
+
+						return;
+					}
+
 					if (data?.message === "Registration success.") {
 						const registrationBtn = document.getElementById("registrationBtn");
 						if (registrationBtn) {

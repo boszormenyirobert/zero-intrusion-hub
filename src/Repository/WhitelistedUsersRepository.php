@@ -28,6 +28,16 @@ class WhitelistedUsersRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findOneByEmail(string $email): ?WhitelistedUsers
+    {
+        return $this->createQueryBuilder('w')
+            ->andWhere('LOWER(w.email) = LOWER(:email)')
+            ->setParameter('email', trim($email))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     //    /**
     //     * @return WhitelistedUsers[] Returns an array of WhitelistedUsers objects
     //     */

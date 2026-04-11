@@ -30,7 +30,6 @@ class RegistrationController extends AbstractController
 
     /*
     * Home page for the HUB instance, shows the Instance Registration process if the .env variable 
-    * ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION is set to true.   
     * If JWT token is present in cookies, decodes it to check if it's valid and passes this info to the template.
     *
     * This is the first step of the Instance Registration process, where the user can request an identity for their HUB instance

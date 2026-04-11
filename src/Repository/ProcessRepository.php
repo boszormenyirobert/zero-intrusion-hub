@@ -31,6 +31,20 @@ class ProcessRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findRejectedLoginProcess(string $processId): ?Process
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.processId = :processId')
+            ->andWhere('p.authId IN (:reasons)')
+            ->setParameter('processId', $processId)
+            ->setParameter('reasons', [
+                'login_rejected_whitelist',
+            ])
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     //    /**
     //     * @return Process[] Returns an array of Process objects
     //     */

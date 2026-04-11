@@ -24,7 +24,6 @@ class InstanceController extends AbstractController
 
     /*
     * Home page for the HUB instance, shows the Instance Registration process if the .env variable 
-    * ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION is set to true.
     * If JWT token is present in cookies, decodes it to check if it's valid and passes this info to the template.
     */
     #[Route('/', name: 'home')]
@@ -93,7 +92,7 @@ class InstanceController extends AbstractController
         $form->handleRequest($request);
 
         if ($whitelistedUserFormHandler->handle($form)) {
-            return $this->redirectToRoute('home');
+            return $this->redirectToRoute('access');
         }
 
         return $this->render(
@@ -101,8 +100,55 @@ class InstanceController extends AbstractController
             $this->instanceService->buildUsersViewData(
                 $request,
                 $availabilities,
-                $form->createView()
+                $form->createView(),
+                $whitelistedUserFormHandler->getAll()
             )
         );
+    }
+
+    #[Route('/access/{id}/status', name: 'access_user_status', methods: ['POST'])]
+    public function updateWhitelistedUserStatus(
+        int $id,
+        Request $request,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService,
+        WhitelistedUserFormHandler $whitelistedUserFormHandler
+    ): Response
+    {
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
+
+        if ($availabilities['availability_users'] === false) {
+            return $this->redirectToRoute('home');
+        }
+
+        if (!$this->isCsrfTokenValid('whitelisted_user_status_' . $id, (string) $request->request->get('_token'))) {
+            return $this->redirectToRoute('access');
+        }
+
+        $whitelistedUserFormHandler->updateStatus($id, $request->request->getBoolean('active'));
+
+        return $this->redirectToRoute('access');
+    }
+
+    #[Route('/access/{id}/delete', name: 'access_user_delete', methods: ['POST'])]
+    public function deleteWhitelistedUser(
+        int $id,
+        Request $request,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService,
+        WhitelistedUserFormHandler $whitelistedUserFormHandler
+    ): Response
+    {
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
+
+        if ($availabilities['availability_users'] === false) {
+            return $this->redirectToRoute('home');
+        }
+
+        if (!$this->isCsrfTokenValid('whitelisted_user_delete_' . $id, (string) $request->request->get('_token'))) {
+            return $this->redirectToRoute('access');
+        }
+
+        $whitelistedUserFormHandler->delete($id);
+
+        return $this->redirectToRoute('access');
     }
 }

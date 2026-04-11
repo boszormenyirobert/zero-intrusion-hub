@@ -99,6 +99,31 @@ class UserService
             return false;
         }
 
+        $whitelistedUser = $this->whitelistedUsersRepository->findActiveByEmail($authorizedUser->getEmail());
+
+        if ($whitelistedUser === null) {
+            $this->markProcessRejected($authorizedUser->getProcessId(), 'login_rejected_whitelist');
+
+            $this->logger->warning('User login rejected because email is not whitelisted or inactive', [
+                'email' => $authorizedUser->getEmail(),
+                'public_id' => $authorizedUser->getPublicId(),
+                'process_id' => $authorizedUser->getProcessId(),
+            ]);
+
+            $registrationUser->setAllowed(false);
+            $registrationUser->setProcess(null);
+            $this->entityManager->persist($registrationUser);
+            $this->entityManager->flush();
+
+            return false;
+        }
+
+        $this->logger->info('User login allowed by whitelist', [
+            'email' => $authorizedUser->getEmail(),
+            'public_id' => $authorizedUser->getPublicId(),
+            'process_id' => $authorizedUser->getProcessId(),
+        ]);
+
         $registrationUser->setProcess($authorizedUser->getProcessId());
         $registrationUser->setAllowed(true);
 
@@ -123,7 +148,7 @@ class UserService
         $whitelistedUser = $this->whitelistedUsersRepository->findActiveByEmail($process->getEmail());
 
         if ($whitelistedUser === null) {
-            $this->markRegistrationRejectedProcess($process->getProcessId(), 'registration_rejected_whitelist');
+            $this->markProcessRejected($process->getProcessId(), 'registration_rejected_whitelist');
 
             $this->logger->warning('User registration rejected because email is not whitelisted or inactive', [
                 'email' => $process->getEmail(),
@@ -146,7 +171,7 @@ class UserService
         );
 
         if ($existingUser !== null) {
-            $this->markRegistrationRejectedProcess($process->getProcessId(), 'registration_rejected_duplicate_user');
+            $this->markProcessRejected($process->getProcessId(), 'registration_rejected_duplicate_user');
 
             $this->logger->warning('User registration rejected because email and publicId already exist', [
                 'email' => $process->getEmail(),
@@ -175,7 +200,7 @@ class UserService
         return true;
     }
 
-    private function markRegistrationRejectedProcess(string $processId, string $reason): void
+    private function markProcessRejected(string $processId, string $reason): void
     {
         $process = $this->processRepository->findOneBy([
             'processId' => $processId,
@@ -188,7 +213,7 @@ class UserService
         $this->entityManager->persist($process);
         $this->entityManager->flush();
 
-        $this->logger->info('Registration process marked as rejected', [
+        $this->logger->info('Process marked as rejected', [
             'process_id' => $processId,
             'reason' => $reason,
         ]);
