@@ -5,14 +5,17 @@
 
 	<div class="top-right-buttons">
 		{% if is_jwt_valid is same as(true) %}
-			<a href="/user-logout">
-				<span>Logout</span>
-				<svg style="width:25px; height=25px" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-out" viewBox="0 0 24 24">
-					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-					<polyline points="16 17 21 12 16 7"/>
-					<line x1="21" y1="12" x2="9" y2="12"/>
-				</svg>
-			</a>	
+			<form method="post" action="{{ path('instance_logout') }}">
+				<input type="hidden" name="_token" value="{{ csrf_token('userLogout') }}">
+				<button type="submit">
+					<span>Logout</span>
+					<svg style="width:25px; height=25px" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-out" viewBox="0 0 24 24">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+						<polyline points="16 17 21 12 16 7"/>
+						<line x1="21" y1="12" x2="9" y2="12"/>
+					</svg>
+				</button>
+			</form>
      
 			<button id="oneTouchBtn"><span>One Touch</span>			
 				<svg style="width:25px; height=25px" xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 180 180">
@@ -166,34 +169,56 @@
 
 {% if processId is defined and processId %}
 	<script>	// Auto polling for login/registration status
-		fetch("/login/check?processId={{ processId }}&action={{ action }}")
-			.then(response => {
-				if (!response.ok) {
-					throw new Error("Network error: " + response.status);
-				}
+		const pollUrl = "/login/check?processId={{ processId }}&action={{ action }}";
+		let pollAttempts = 0;
+		const maxPollAttempts = 10;
 
-				return response.json();
-			})
-			.then(data => {
-
-				if (data?.message === "Authentication success.") {
-					window.location.href = "/";
-					return;
-				}
-
-				if (data?.message === "Registration success.") {
-					const registrationBtn = document.getElementById("registrationBtn");
-					if (registrationBtn) {
-						registrationBtn.style.background = "green";
+		const pollStatus = () => {
+			fetch(pollUrl)
+				.then(response => {
+					if (!response.ok) {
+						throw new Error("Network error: " + response.status);
 					}
 
-					setTimeout(() => {
+					return response.json();
+				})
+				.then(data => {
+					if (data?.message === "Authentication success.") {
 						window.location.href = "/";
-					}, 3000);
-				}
-			})
-			.catch(error => {
-			console.error("Fetch failed:", error);
-			});
+						return;
+					}
+
+					if (data?.message === "Registration success.") {
+						const registrationBtn = document.getElementById("registrationBtn");
+						if (registrationBtn) {
+							registrationBtn.style.background = "green";
+						}
+
+						setTimeout(() => {
+							window.location.href = "/";
+						}, 3000);
+						return;
+					}
+
+					if (typeof data?.message === "string" && data.message.startsWith("Registration rejected")) {
+						const registrationError = document.getElementById("registration-error");
+						if (registrationError) {
+							registrationError.textContent = data.message;
+							registrationError.style.display = "block";
+						}
+						return;
+					}
+
+					pollAttempts += 1;
+					if (pollAttempts < maxPollAttempts) {
+						setTimeout(pollStatus, 1000);
+					}
+				})
+				.catch(error => {
+					console.error("Fetch failed:", error);
+				});
+		};
+
+		pollStatus();
 	</script>
 {% endif %}

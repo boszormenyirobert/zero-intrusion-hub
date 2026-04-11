@@ -10,12 +10,14 @@
  */
 namespace App\Controller\User\Login\HUB;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use App\Repository\UserRepository;
+use App\Service\User\Login\HUB\LoginService;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class LoginController extends AbstractController
 {
@@ -31,15 +33,9 @@ class LoginController extends AbstractController
     #[Route('login', name: 'instance_login', methods: ["GET"] )]
     public function login(
         Request $request
-        ) {  
-        $viewData = $this->loginService->buildLoginViewData(
-            $request,
-            (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
-        );
-
-        if ($viewData === null) {
-            return null;
-        }
+    ): Response
+    {
+        $viewData = $this->loginService->buildLoginViewData($request);
 
         return $this->render('views/users/user-login.html.twig', $viewData);
     }
@@ -53,13 +49,11 @@ class LoginController extends AbstractController
     #[Route('/login/check', name: 'user_login_check', methods: "GET")]
     public function pollStateByFrontend(
         Request $request,
-        UserRepository $userRepository,
         JWTTokenManagerInterface $jwtManager
-    )
+    ): Response
     {
         return $this->loginService->buildFrontendPollResponse(
             $request,
-            $userRepository,
             $jwtManager
         );
     }
@@ -67,9 +61,16 @@ class LoginController extends AbstractController
     /*
     * Logs out the user and clears the JWT cookie when the logout link is clicked.
     */
-    #[Route('/user-logout', name: 'instance_logout', methods: "GET")]
-    public function logout(CsrfTokenManagerInterface $csrfTokenManager, Request $request) {
-        $csrfTokenManager->removeToken('userLoginCsrf');
+    #[Route('/user-logout', name: 'instance_logout', methods: ["POST"])]
+    public function logout(CsrfTokenManagerInterface $csrfTokenManager, Request $request): Response
+    {
+        $token = $request->request->get('_token');
+
+        if (!is_string($token) || !$csrfTokenManager->isTokenValid(new CsrfToken('userLogout', $token))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $csrfTokenManager->removeToken('userLogout');
 
         $response = $this->redirectToRoute('home');
         $this->loginService->prepareLogoutResponse($response, $request);

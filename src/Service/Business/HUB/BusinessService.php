@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Controller\Business\HUB;
+namespace App\Service\Business\HUB;
 
 use App\Form\BusinessRequesterType;
 use App\Repository\UserRepository;
 use App\Service\Corporate\SubscriptionService;
-use App\Service\JWT\JwtService;
+use App\Service\Instance\HUB\JwtContextService;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -22,7 +22,7 @@ class BusinessService
     ];
 
     public function __construct(
-        private JwtService $jwtService,
+        private JwtContextService $jwtContextService,
         private JWTEncoderInterface $jwtEncoder,
         private UserRepository $userRepository,
         private LoggerInterface $logger,
@@ -31,12 +31,12 @@ class BusinessService
 
     public function resolveBusinessContext(Request $request): ?array
     {
-        $jwtContext = $this->buildJwtContext($request);
+        $jwtContext = $this->jwtContextService->build($request);
         $jwtToken = $jwtContext['payload'];
 
         if ($jwtToken === null) {
             $this->logger->warning('Business page user identification failed', [
-                'route' => 'business_registration',
+                'route' => $request->attributes->get('_route'),
                 'has_jwt_token' => false,
             ]);
 
@@ -47,7 +47,7 @@ class BusinessService
 
         if ($user === null) {
             $this->logger->warning('Business page user identification failed', [
-                'route' => 'business_registration',
+                'route' => $request->attributes->get('_route'),
                 'has_jwt_token' => true,
             ]);
 
@@ -55,7 +55,7 @@ class BusinessService
         }
 
         $this->logger->info('Business page user identified from JWT', [
-            'route' => 'business_registration',
+            'route' => $request->attributes->get('_route'),
             'user_public_id' => $user['publicId'] ?? null,
             'user_email' => $user['email'] ?? null,
         ]);
@@ -80,6 +80,11 @@ class BusinessService
             $forms[$key] = $form;
         }
 
+        $this->logger->debug('Business subscription forms prepared', [
+            'route' => $request->attributes->get('_route'),
+            'form_keys' => array_keys($forms),
+        ]);
+
         return $forms;
     }
 
@@ -99,6 +104,13 @@ class BusinessService
             $jwtToken = $this->jwtEncoder->decode($jwtTokenEncoded);
             $validatedInput = $form->getData();
 
+            $this->logger->info('Business subscription request submitted', [
+                'route' => $request->attributes->get('_route'),
+                'process' => $process,
+                'business_model' => $validatedInput['businessModel'] ?? null,
+                'user_public_id' => $jwtToken['publicId'] ?? null,
+            ]);
+
             $subscriptionData = $subscriptionService->getSubscriptionData(
                 $process,
                 $validatedInput['businessModel'],
@@ -106,11 +118,11 @@ class BusinessService
                 $jwtToken['publicId']
             );
 
-            $this->logger->info('Business subscription request submitted', [
-                'route' => 'business_registration',
+            $this->logger->info('Business subscription response received', [
+                'route' => $request->attributes->get('_route'),
                 'process' => $process,
                 'business_model' => $validatedInput['businessModel'] ?? null,
-                'user_public_id' => $jwtToken['publicId'] ?? null,
+                'response_keys' => is_array($subscriptionData) ? array_keys($subscriptionData) : [],
             ]);
 
             return $subscriptionData;
@@ -146,6 +158,10 @@ class BusinessService
 
     public function buildEmptyBusinessViewData(bool $menuItemInstanceRegistration): array
     {
+        $this->logger->info('Rendering empty business view data due to missing business context', [
+            'menu_item_instance_registration' => $menuItemInstanceRegistration,
+        ]);
+
         return [
             'is_jwt_valid' => false,
             'user' => [
@@ -162,44 +178,7 @@ class BusinessService
         ];
     }
 
-    private function buildJwtContext(Request $request): array
-    {
-        $token = $request->cookies->get('jwt_token');
-
-        if (!$token) {
-            $this->logger->warning('Business page accessed without JWT cookie', [
-                'route' => 'business_registration',
-            ]);
-
-            return [
-                'isJwtValid' => false,
-                'userPublicId' => '',
-                'userEmail' => '',
-                'payload' => null,
-            ];
-        }
-
-        $payload = $this->jwtService->jwtValidation($token);
-        $isJwtValid = $payload !== null;
-        $userPublicId = $isJwtValid ? ($payload['publicId'] ?? '') : '';
-        $userEmail = $isJwtValid ? ($payload['username'] ?? '') : '';
-
-        $this->logger->info('Business page JWT evaluated', [
-            'route' => 'business_registration',
-            'is_jwt_valid' => $isJwtValid,
-            'user_public_id' => $userPublicId,
-            'user_email' => $userEmail,
-        ]);
-
-        return [
-            'isJwtValid' => $isJwtValid,
-            'userPublicId' => $userPublicId,
-            'userEmail' => $userEmail,
-            'payload' => $payload,
-        ];
-    }
-
-    private function identifyUser(array $jwtToken): ?array
+    private function identifyUser(?array $jwtToken): ?array
     {
         if (!isset($jwtToken['username'])) {
             $this->logger->warning('JWT token missing username during business user identification');

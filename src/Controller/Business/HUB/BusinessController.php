@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Attribute\JwtRequired;
 use App\Service\Corporate\SubscriptionService;
+use App\Service\Business\HUB\BusinessService;
+use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
 
 class BusinessController extends AbstractController
 {
@@ -28,9 +30,11 @@ class BusinessController extends AbstractController
     #[Route('/business', name: 'business_registration')]
     public function business(
         Request $request,
-        SubscriptionService $subscriptionService
+        SubscriptionService $subscriptionService,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
     ): Response 
     {   
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
         $businessContext = $this->businessService->resolveBusinessContext($request);
         $forms = $this->businessService->buildForms($request);
 
@@ -38,7 +42,7 @@ class BusinessController extends AbstractController
             return $this->render(
                 'views/corporate/business-services.html.twig',
                 $this->businessService->buildEmptyBusinessViewData(
-                    (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+                    $availabilities['availability_settings']
                 )
             );
         }
@@ -59,7 +63,7 @@ class BusinessController extends AbstractController
                 $businessContext,
                 $forms,
                 null,
-                (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+                $availabilities['availability_settings']
             )
         );
     }

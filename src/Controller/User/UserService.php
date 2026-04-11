@@ -13,6 +13,7 @@ use App\Repository\ProcessRepository;
 use App\Repository\UserRepository;
 use App\DTO\RegistrationProcessDTO;
 use App\Repository\OwnClientRepository;
+use App\Repository\WhitelistedUsersRepository;
 use \Symfony\Component\HttpFoundation\JsonResponse;
 
 class UserService
@@ -25,7 +26,8 @@ class UserService
         private InstanceSettingsService $instanceSettingsService,
         private ProcessRepository $processRepository,
         private UserRepository $userRepository,
-        private OwnClientRepository $ownClientRepository
+        private OwnClientRepository $ownClientRepository,
+        private WhitelistedUsersRepository $whitelistedUsersRepository
     ) {}
 
     /**
@@ -118,6 +120,44 @@ class UserService
             return $this->logVerificationError();
         }
 
+        $whitelistedUser = $this->whitelistedUsersRepository->findActiveByEmail($process->getEmail());
+
+        if ($whitelistedUser === null) {
+            $this->markRegistrationRejectedProcess($process->getProcessId(), 'registration_rejected_whitelist');
+
+            $this->logger->warning('User registration rejected because email is not whitelisted or inactive', [
+                'email' => $process->getEmail(),
+                'public_id' => $process->getPublicId(),
+                'process_id' => $process->getProcessId(),
+            ]);
+
+            return false;
+        }
+
+        $this->logger->info('User registration allowed by whitelist', [
+            'email' => $process->getEmail(),
+            'public_id' => $process->getPublicId(),
+            'process_id' => $process->getProcessId(),
+        ]);
+
+        $existingUser = $this->userRepository->findOneByEmailAndPublicId(
+            $process->getEmail(),
+            $process->getPublicId()
+        );
+
+        if ($existingUser !== null) {
+            $this->markRegistrationRejectedProcess($process->getProcessId(), 'registration_rejected_duplicate_user');
+
+            $this->logger->warning('User registration rejected because email and publicId already exist', [
+                'email' => $process->getEmail(),
+                'public_id' => $process->getPublicId(),
+                'process_id' => $process->getProcessId(),
+                'existing_user_id' => $existingUser->getId(),
+            ]);
+
+            return false;
+        }
+
         $user = new User();
         $user->setEmail($process->getEmail());
         $user->setProcess($process->getProcessId());
@@ -126,7 +166,32 @@ class UserService
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
+        $this->logger->info('User created from registration callback', [
+            'email' => $user->getEmail(),
+            'public_id' => $user->getPublicId(),
+            'process_id' => $user->getProcess(),
+        ]);
+
         return true;
+    }
+
+    private function markRegistrationRejectedProcess(string $processId, string $reason): void
+    {
+        $process = $this->processRepository->findOneBy([
+            'processId' => $processId,
+        ]) ?? new Process();
+
+        $process->setProcessId($processId);
+        $process->setAuthId($reason);
+        $process->setAllowed(false);
+
+        $this->entityManager->persist($process);
+        $this->entityManager->flush();
+
+        $this->logger->info('Registration process marked as rejected', [
+            'process_id' => $processId,
+            'reason' => $reason,
+        ]);
     }
 
     /**

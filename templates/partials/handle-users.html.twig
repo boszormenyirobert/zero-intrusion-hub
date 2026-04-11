@@ -1,0 +1,22 @@
+<section class="section">
+	<h2>
+		Handle Access 
+	</h2>
+	<div class="section-content-row">
+		<div class="content-box">
+			<p>
+				Add or remove users from your company’s access list to allow/deny registration of the Instance HUB
+
+				{{ form_start(form, {					
+					method: 'POST',
+				}) }}
+
+				{{ form_row(form._token) }}
+				{# ensures CSRF token is included #}
+				<button class="business-btn" type="submit">Confirm add user</button>
+
+				{{ form_end(form) }}
+			</p>
+		</div>
+	</div>
+</section></div>

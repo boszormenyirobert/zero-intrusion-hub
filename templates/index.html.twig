@@ -29,28 +29,39 @@
 										<ul>
 											
 												<li><a href="/">Home</a></li>
-												{% if menuItem_instanceRegistration %}
-													<li>
-														<a href="/instance">Instance</a>
+													{% if availabilities is defined and availabilities.availability_instance == true %}													
+													<li>	
+														<a href="/">Instance</a>
 														<ul>
 															<li><a href="/instance-registration">Instance Registration</a></li>
 															<li><a href="/instance-registration-follow-up">Instance Registration Confirmation</a></li>													
 														</ul>
 													</li>
 												{% endif %} 
+
+												{% if availabilities is defined and availabilities.availability_settings == true %}
+
+													<li>													
+														<a href="/settings">Settings</a>																																	
+													</li>	
+												{% endif %}	
+
+												{% if availabilities is defined and availabilities.availability_users == true %}
+													<li>
+														<a href="/access">Users</a>		
+													</li>		
+												{% endif %}	
+
 												<li>
 													{% if is_jwt_valid == true %}
-														<a href="/business">Business</a>
-													{% else %}
-														<a id="businessBtn" href="/business">Business</a>			
+														<a href="/business">Business</a>	
 													{% endif %}																			
 												</li>		
-												
+
+										
 												<li>
 													{% if is_jwt_valid == true %}
-														<a href="/account">Account</a>
-													{% else %}
-														<a id="accountBtn" href="/account">Account</a>									
+														<a href="/account">Account</a>							
 													{% endif %}
 												</li>																								
 										</ul>

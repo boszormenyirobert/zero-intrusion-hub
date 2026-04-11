@@ -15,17 +15,17 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Service\Corporate\SubscriptionService;
 use App\Form\CorporateType;
-use Psr\Log\LoggerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use App\Service\Instance\HUB\ExternalInstanceRegistrationHandler;
+use App\Service\Instance\HUB\InstanceRegistrationFollowUpHandler;
+use App\Service\Instance\HUB\InstanceRegistrationService;
+use App\Service\Instance\HUB\InternalInstanceRegistrationHandler;
+use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
 
 class RegistrationController extends AbstractController
 {
     public function __construct(
-        private ContainerBagInterface $params,
-        private LoggerInterface $logger
+        private InstanceRegistrationService $instanceRegistrationService
     ) {}
 
     /*
@@ -38,29 +38,25 @@ class RegistrationController extends AbstractController
     #[Route('/instance-registration', name: 'instance_registration')]
     public function instanceRegistration(
         Request $request,
-        SubscriptionService $subscriptionService,
-        JWTEncoderInterface $jwtEncoder
+        InternalInstanceRegistrationHandler $internalInstanceRegistrationHandler,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
     ): Response
     {
         $formIdentity = $this->createForm(IdentityRequesterType::class);
         $formIdentity->handleRequest($request);
-        
-        $process = "getIdentity";
-        $businessModel = 'businessPro';
 
-        if ($formIdentity->isSubmitted() && $formIdentity->isValid()) {
-       
-            $publicId = $this->params->get('INSTALLATION_PUBLIC_ID');
-            $this->logger->info('PublicId for instance registration', ['publicId' => $publicId]);   
+        $subscriptionData = $internalInstanceRegistrationHandler->handle($formIdentity);
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
 
-            $subscriptionData = $subscriptionService->getSubscriptionData($process, $businessModel, 'internal', $publicId);            
+        if ( $availabilities['availability_instance'] === false ) {
+            return $this->redirectToRoute('home');
         }
-        
+
         return $this->render('views/containers/container-instance-registration.html.twig', [
             'form_identity_requester' => $formIdentity->createView(),
             'service_auth_data' => $subscriptionData ?? null,
             'path' => 'instance_registration',
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')        
+            'availabilities' => $availabilities    
         ]);
     }    
     
@@ -74,29 +70,28 @@ class RegistrationController extends AbstractController
     #[Route('/instance-registration-external', name: 'instance_registration_external')]
     public function instanceRegistrationExternal(
         Request $request,
-        SubscriptionService $subscriptionService,
-    JWTEncoderInterface $jwtEncoder
+        ExternalInstanceRegistrationHandler $externalInstanceRegistrationHandler,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
     ): Response
     {
         $formIdentity = $this->createForm(IdentityRequesterType::class);
         $formIdentity->handleRequest($request);
-        
-        $process = "getIdentity";
-        $businessModel = 'businessPro';
 
-        if ($formIdentity->isSubmitted() && $formIdentity->isValid()) {
-            $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';   
-            $jwt_token = $jwtEncoder->decode($jwtTokenEncoded);
-            $subscriptionData = $subscriptionService->getSubscriptionData($process, $businessModel, 'external', $jwt_token['publicId']);
-                        
+        if ($externalInstanceRegistrationHandler->handle($formIdentity, $request)) {
             return $this->redirectToRoute('account');
+        }
+
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
+
+        if ( $availabilities['availability_instance'] === false ) {
+            return $this->redirectToRoute('home');
         }
         
         return $this->render('views/containers/container-instance-registration.html.twig', [
             'form_identity_requester' => $formIdentity->createView(),
-            'service_auth_data' => $subscriptionData ?? null,
+            'service_auth_data' => null,
             'path' => 'instance_registration_external',
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+            'availabilities' => $availabilities
         ]);
     }        
 
@@ -107,23 +102,27 @@ class RegistrationController extends AbstractController
     #[Route('/instance-registration-follow-up', name: 'instance_registration_follow_up')]
     public function instanceRegistrationFollowUp(
         Request $request,
-        SubscriptionService $subscriptionService
+        InstanceRegistrationFollowUpHandler $instanceRegistrationFollowUpHandler,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
     ): Response
     {
         $formSystemRegistration = $this->createForm(CorporateType::class);
         $formSystemRegistration->handleRequest($request);
 
-        if ($formSystemRegistration->isSubmitted() && $formSystemRegistration->isValid()) {
-            $userInputs = $formSystemRegistration->getData();
-            $subscriptionService->updateOwnClient($userInputs);
-            $subscriptionService->finalizeSubscription($userInputs);
+        if ($instanceRegistrationFollowUpHandler->handle($formSystemRegistration)) {
 
             return $this->redirectToRoute('account');
         }
 
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
+
+        if ( $availabilities['availability_instance'] === false ) {
+            return $this->redirectToRoute('home');
+        }
+
         return $this->render('views/containers/container-subscription-final.html.twig', [
             'form_identity_followup' =>  $formSystemRegistration->createView(),
-            'menuItem_instanceRegistration' => (bool)$this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+            'availabilities' => $availabilities
           ]);
     }
 }

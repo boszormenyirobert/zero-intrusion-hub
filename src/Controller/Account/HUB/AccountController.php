@@ -4,6 +4,8 @@
  */
 namespace App\Controller\Account\HUB;
 
+use App\Service\Account\HUB\AccountService;
+use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,9 +28,11 @@ class AccountController extends AbstractController
     #[Route('/account', name: 'account')]
     public function account(
         Request $request,
-        UserRegistrationService $userRegistrationService
+        UserRegistrationService $userRegistrationService,
+        RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
     ): Response 
     { 
+        $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
         $accountContext = $this->accountService->resolveAccountContext($request);
 
         if ($accountContext === null) {
@@ -45,7 +49,7 @@ class AccountController extends AbstractController
             $this->accountService->buildAccountViewData(
                 $accountContext,
                 $businessSubscription,
-                (bool) $this->getParameter('ZERO_INTRUSION_FRONTEND_ALLOW_INSTANCE_REGISTRATION')
+                $availabilities['availability_settings']
             )
         );
     }

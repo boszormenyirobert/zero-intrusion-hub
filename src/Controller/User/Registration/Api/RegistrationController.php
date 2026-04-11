@@ -15,7 +15,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Controller\User\UserService;
 use Psr\Log\LoggerInterface;
 use App\DTO\RegistrationProcessDTO;
-use App\Controller\CredentialHub\BackendForwared;
 
 class RegistrationController extends AbstractController
 {
@@ -67,7 +66,24 @@ class RegistrationController extends AbstractController
             $response = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $dto = RegistrationProcessDTO::mapFromArrayRegistration($response);
 
-            $this->userService->createUser($dto);
+            if (!$this->userService->createUser($dto)) {
+                $this->logger->warning('Registration callback rejected', [
+                    'email' => $dto->getEmail(),
+                    'public_id' => $dto->getPublicId(),
+                    'process_id' => $dto->getProcessId(),
+                ]);
+
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => 'Registration rejected.'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $this->logger->info('Registration callback completed successfully', [
+                'email' => $dto->getEmail(),
+                'public_id' => $dto->getPublicId(),
+                'process_id' => $dto->getProcessId(),
+            ]);
             // and create process !!! to check from frontend
 
             return new JsonResponse(['status' => 'success', 'data' => 'callback success'], Response::HTTP_OK);

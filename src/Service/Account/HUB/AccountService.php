@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Controller\Account\HUB;
+namespace App\Service\Account\HUB;
 
 use App\Repository\UserRepository;
-use App\Service\JWT\JwtService;
+use App\Service\Instance\HUB\JwtContextService;
 use App\Service\User\UserRegistrationService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,18 +20,18 @@ class AccountService
     ];
 
     public function __construct(
-        private JwtService $jwtService,
+        private JwtContextService $jwtContextService,
         private UserRepository $userRepository,
         private LoggerInterface $logger
     ) {}
 
     public function resolveAccountContext(Request $request): ?array
     {
-        $jwtContext = $this->buildJwtContext($request);
+        $jwtContext = $this->jwtContextService->build($request);
 
         if (!$jwtContext['isJwtValid']) {
             $this->logger->warning('Account access denied due to invalid JWT or unknown user', [
-                'route' => 'account',
+                'route' => $request->attributes->get('_route'),
                 'is_jwt_valid' => $jwtContext['isJwtValid'],
             ]);
 
@@ -42,7 +42,7 @@ class AccountService
 
         if ($user === null) {
             $this->logger->warning('Account access denied due to invalid JWT or unknown user', [
-                'route' => 'account',
+                'route' => $request->attributes->get('_route'),
                 'is_jwt_valid' => $jwtContext['isJwtValid'],
             ]);
 
@@ -50,7 +50,7 @@ class AccountService
         }
 
         $this->logger->info('Account user identified from JWT', [
-            'route' => 'account',
+            'route' => $request->attributes->get('_route'),
             'user_public_id' => $user['publicId'] ?? null,
             'user_email' => $user['email'] ?? null,
         ]);
@@ -66,6 +66,12 @@ class AccountService
         array $user
     ): array {
         $process = 'get_registrated_business';
+
+        $this->logger->info('Loading business subscription for account view', [
+            'process' => $process,
+            'user_public_id' => $user['publicId'] ?? null,
+            'user_email' => $user['email'] ?? null,
+        ]);
 
         /** @var Response $response */
         $response = $userRegistrationService->forwardRegistration([
@@ -85,6 +91,12 @@ class AccountService
                 'businessSubscription' => [],
             ];
         }
+
+        $this->logger->info('Account business subscription payload loaded', [
+            'process' => $process,
+            'accounts_count' => count($businessSubscription['accounts'] ?? []),
+            'subscription_keys' => array_keys($businessSubscription['businessSubscription'] ?? []),
+        ]);
 
         return $businessSubscription;
     }
@@ -107,44 +119,7 @@ class AccountService
         ];
     }
 
-    private function buildJwtContext(Request $request): array
-    {
-        $token = $request->cookies->get('jwt_token');
-
-        if (!$token) {
-            $this->logger->warning('Account page accessed without JWT cookie', [
-                'route' => 'account',
-            ]);
-
-            return [
-                'isJwtValid' => false,
-                'userPublicId' => '',
-                'userEmail' => '',
-                'payload' => null,
-            ];
-        }
-
-        $payload = $this->jwtService->jwtValidation($token);
-        $isJwtValid = $payload !== null;
-        $userPublicId = $isJwtValid ? ($payload['publicId'] ?? '') : '';
-        $userEmail = $isJwtValid ? ($payload['username'] ?? '') : '';
-
-        $this->logger->info('Account page JWT evaluated', [
-            'route' => 'account',
-            'is_jwt_valid' => $isJwtValid,
-            'user_public_id' => $userPublicId,
-            'user_email' => $userEmail,
-        ]);
-
-        return [
-            'isJwtValid' => $isJwtValid,
-            'userPublicId' => $userPublicId,
-            'userEmail' => $userEmail,
-            'payload' => $payload,
-        ];
-    }
-
-    private function findUserFromToken(array $jwtToken): ?array
+    private function findUserFromToken(?array $jwtToken): ?array
     {
         $email = $jwtToken['username'] ?? null;
 

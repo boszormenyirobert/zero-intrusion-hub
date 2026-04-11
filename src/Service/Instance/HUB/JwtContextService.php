@@ -1,39 +1,26 @@
 <?php
 
-namespace App\Controller\Instance\HUB;
+namespace App\Service\Instance\HUB;
 
 use App\Service\JWT\JwtService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
-class InstanceService
+class JwtContextService
 {
     public function __construct(
         private JwtService $jwtService,
-        private LoggerInterface $logger,
+        private LoggerInterface $logger
     ) {}
 
-    public function buildHomeViewData(Request $request, bool $menuItemInstanceRegistration): array
-    {
-        $jwtContext = $this->buildJwtContext($request);
-
-        return [
-            'is_jwt_valid' => $jwtContext['isJwtValid'],
-            'user' => [
-                'userPublicId' => $jwtContext['userPublicId'],
-                'userEmail' => $jwtContext['userEmail'],
-            ],
-            'menuItem_instanceRegistration' => $menuItemInstanceRegistration,
-        ];
-    }
-
-    private function buildJwtContext(Request $request): array
+    public function build(Request $request): array
     {
         $token = $request->cookies->get('jwt_token');
+        $route = $request->attributes->get('_route');
 
         if (!$token) {
-            $this->logger->info('Home page accessed without JWT cookie', [
-                'route' => 'home',
+            $this->logger->debug('JWT context built without JWT cookie', [
+                'route' => $route,
             ]);
 
             return [
@@ -49,14 +36,14 @@ class InstanceService
         $userEmail = $isJwtValid ? ($payload['username'] ?? '') : '';
 
         if ($isJwtValid) {
-            $this->logger->info('Home page accessed with valid JWT', [
-                'route' => 'home',
+            $this->logger->debug('JWT context built with valid JWT', [
+                'route' => $route,
                 'user_public_id' => $userPublicId,
                 'user_email' => $userEmail,
             ]);
         } else {
-            $this->logger->warning('Home page accessed with invalid JWT', [
-                'route' => 'home',
+            $this->logger->warning('JWT context built with invalid JWT', [
+                'route' => $route,
             ]);
         }
 
@@ -64,6 +51,7 @@ class InstanceService
             'isJwtValid' => $isJwtValid,
             'userPublicId' => $userPublicId,
             'userEmail' => $userEmail,
+            'payload' => $payload,
         ];
     }
 }

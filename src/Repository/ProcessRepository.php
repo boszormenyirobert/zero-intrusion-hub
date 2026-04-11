@@ -16,6 +16,21 @@ class ProcessRepository extends ServiceEntityRepository
         parent::__construct($registry, Process::class);
     }
 
+    public function findRejectedRegistrationProcess(string $processId): ?Process
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.processId = :processId')
+            ->andWhere('p.authId IN (:reasons)')
+            ->setParameter('processId', $processId)
+            ->setParameter('reasons', [
+                'registration_rejected_whitelist',
+                'registration_rejected_duplicate_user',
+            ])
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     //    /**
     //     * @return Process[] Returns an array of Process objects
     //     */

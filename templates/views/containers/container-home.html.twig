@@ -5,6 +5,18 @@
 
 {% block body %}
 {% if is_jwt_valid  %}
+	{% if availabilities is defined and availabilities.availability_settings == true and availabilities.availability_instance == true %}
+		<section class="section">
+			<div class="content-box">
+				<h2>Process Instance Registration</h2>
+				<ol>
+					<li>Register yourself with your email under the "Users" menu.</li>
+					<li>Follow the instance registration process under "Instance =&gt; Instance Registration" and "Instance =&gt; Instance Registration Confirmation".</li>
+					<li>Open "Settings" to finalize the HUB registration.</li>
+				</ol>
+			</div>
+		</section>
+	{% endif %}
 	{{include('partials/why.html.twig')}}
 	{{include('partials/innovative.html.twig')}}
 	{{include('partials/integration-overview.html.twig')}}
