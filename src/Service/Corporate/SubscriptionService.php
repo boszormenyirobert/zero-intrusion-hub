@@ -63,6 +63,9 @@ class SubscriptionService
 
     public function finalizeSubscription(array $corporateData)
     {
+        $this->logger->info('Starting HUB instance registration finalization', [
+            'corporateDataKeys' => array_keys($corporateData),
+        ]);
         $process = "updateIdentity";
         $response = $this->authorizationControllService->getSecurePostRequest(
             [$process => $corporateData]

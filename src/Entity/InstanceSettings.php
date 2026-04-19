@@ -16,6 +16,9 @@ class InstanceSettings
     #[ORM\Column]
     private ?bool $initialization = null;
 
+    #[ORM\Column(name: 'public_id', length: 255, nullable: true)]
+    private ?string $publicId = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -29,6 +32,18 @@ class InstanceSettings
     public function setInitialization(bool $initialization): static
     {
         $this->initialization = $initialization;
+
+        return $this;
+    }
+
+    public function getPublicId(): ?string
+    {
+        return $this->publicId;
+    }
+
+    public function setPublicId(?string $publicId): static
+    {
+        $this->publicId = $publicId;
 
         return $this;
     }

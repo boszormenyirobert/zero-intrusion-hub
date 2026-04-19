@@ -44,7 +44,7 @@ class RegistrationController extends AbstractController
         $formIdentity = $this->createForm(IdentityRequesterType::class);
         $formIdentity->handleRequest($request);
 
-        $subscriptionData = $internalInstanceRegistrationHandler->handle($formIdentity);
+        $subscriptionData = $internalInstanceRegistrationHandler->handle($formIdentity, $request);
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
 
         if ( $availabilities['availability_instance'] === false ) {

@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use App\Service\Shared\RouteService;
 use App\Service\Instance\InstanceSettingsService;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\BadGatewayHttpException;
 
 class AuthorizationControllService
 {
@@ -58,19 +59,47 @@ class AuthorizationControllService
      */
     public function controllAuthorization($response)
     {
-        $data = json_decode($response->getContent());
-        
+        $rawContent = $response->getContent();
+        $this->logger->info('Backend response content', ['content' => $rawContent]);
+        $data = json_decode($rawContent);
+
+        if (json_last_error() !== JSON_ERROR_NONE || !is_object($data)) {
+            $this->logger->error('Backend response could not be decoded into an object', [
+                'json_error' => json_last_error_msg(),
+                'raw_content' => $rawContent,
+            ]);
+
+            throw new BadGatewayHttpException('Invalid backend response payload.');
+        }
+
+        if (isset($data->error) && (!property_exists($data, 'corporateIdentity') || !is_string($data->corporateIdentity))) {
+            $this->logger->error('Backend returned an upstream error payload instead of encrypted data', [
+                'backend_error' => $data->error,
+                'raw_content' => $rawContent,
+            ]);
+
+            throw new BadGatewayHttpException(sprintf('Backend error: %s', $data->error));
+        }
+
         $authHelper = $this->getAuthorizationHelper();        
         $authorized = $authHelper->controllAuthorizationHeader($data, $response);
 
-        if ($authorized['succes']) {
+        if (($authorized['succes'] ?? false) === true) {
             // Content decryption
             $originalIdentity = new CrypterService($data->corporateIdentity, $this->params);
             $decodedJsonData = $originalIdentity->decryptData(true);           
             return $decodedJsonData;
         }
 
-        return $authorized;
+        $errorMessage = $authorized['error'] ?? 'Authorization validation failed.';
+
+        $this->logger->error('Encrypted backend response authorization failed', [
+            'error' => $errorMessage,
+            'raw_content' => $rawContent,
+        ]);
+
+        throw new BadGatewayHttpException($errorMessage);
+
     }
 
     

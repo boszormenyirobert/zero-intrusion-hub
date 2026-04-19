@@ -82,8 +82,9 @@ class ValidationListenerHelper
         } else       
 
         if (isset($data['userPublicId']) && is_string($data['userPublicId']) && trim($data['userPublicId']) !== '') {
-            if (!preg_match('/^[A-Za-z0-9+\/=]+$/', $data['userPublicId'])) {
-                $errors['userPublicId'] = 'userPublicId contains invalid characters (allowed: A-Z, a-z, 0-9, +, /, =).';
+            // Allow standard and URL-safe base64 (A-Za-z0-9+/= and -_)
+            if (!preg_match('/^[A-Za-z0-9+\/=\-_]+$/', $data['userPublicId'])) {
+                $errors['userPublicId'] = 'userPublicId contains invalid characters (allowed: A-Z, a-z, 0-9, +, /, =, -, _).';
             }
         }
     }  

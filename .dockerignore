@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+vendor
+var
+public/build
+npm-debug.log
+docker-compose
+docker
+infrastructure/docker/compose

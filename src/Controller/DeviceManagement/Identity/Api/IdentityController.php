@@ -6,22 +6,18 @@
  */
 namespace App\Controller\DeviceManagement\Identity\Api;
 
+use App\Service\Device\Identity\FirstSecretInstanceSettingsHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Psr\Log\LoggerInterface;
 
 
 #[Route('/api')]
 class IdentityController extends AbstractController
 {
-    public function __construct(
-        private LoggerInterface $logger
-    ) {}
-
     /*
     * API endpoint for the first step of device registration (called by Mobile, forwarded by ProxyApi).
     * Generates publicId, privateId, integrity secret, and credentialSecret.
@@ -29,8 +25,8 @@ class IdentityController extends AbstractController
     */    
     #[Route('/secret/new', name: 'request-first-secret', methods: "GET")]
     public function requestFirstSecret(
-        Request $request,
-        UserRegistrationService $userRegistrationService
+        UserRegistrationService $userRegistrationService,
+        FirstSecretInstanceSettingsHandler $firstSecretInstanceSettingsHandler
     ): JsonResponse {
         $process = "firstSecret";
 
@@ -38,6 +34,13 @@ class IdentityController extends AbstractController
         $response = $userRegistrationService->forwardRegistration(
             [$process => "no-data"]
         );
+
+        $decoded = json_decode($response->getContent(), true);
+        $registratorUserPublicId = $decoded['privateSecret']['publicId'] ?? null;
+
+        // Write in the INSTANCE_SETTINGS table if there is only one entity and the initialization state true
+        // The is only to retrive the device identification PUBLIC_ID
+        $firstSecretInstanceSettingsHandler->handle($registratorUserPublicId);
 
         return $this->json($response);
     }

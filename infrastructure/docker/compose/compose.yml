@@ -1,0 +1,48 @@
+
+name: zero-intrusion-hub
+
+services:
+  app:
+    build:
+      context: ../../..
+      dockerfile: infrastructure/docker/Dockerfile
+    container_name: symfony_app
+    ports:
+      - "127.0.0.1:8092:80"
+    environment:
+      - ENV_FILE=.env.local.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - symfony
+
+  db:
+    image: mysql:8.0
+    container_name: symfony_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: zero
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: hub
+      MYSQL_USER: zero
+      MYSQL_PASSWORD: zero
+    ports:
+      - "127.0.0.1:3318:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uzero", "-pzero"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - symfony
+
+volumes:
+  db_data:
+
+networks:
+  symfony:
+    driver: bridge

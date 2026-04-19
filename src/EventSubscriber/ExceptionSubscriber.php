@@ -6,6 +6,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface as KernelHttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
@@ -58,6 +59,11 @@ class ExceptionSubscriber implements EventSubscriberInterface
             case $exception instanceof MissingKeyException:
                 $message = 'Missing expected key in array';
                 $statusCode = 400;
+                break;
+
+            case $exception instanceof KernelHttpExceptionInterface:
+                $message = $exception->getMessage();
+                $statusCode = $exception->getStatusCode();
                 break;
     
             case $exception instanceof HttpExceptionInterface:

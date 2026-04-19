@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\BadGatewayHttpException;
 
 class LoginService
 {
@@ -39,6 +40,15 @@ class LoginService
         $loginRequest = $this->resolveLoginRequest($request);
 
         $response = $this->userService->getQrCode('user_login', [], $loginRequest['userPublicId']);
+
+        if (!isset($response['domainProcessId'], $response['qrCode'])) {
+            $this->logger->error('Login QR code response is missing required fields', [
+                'route' => 'instance_login',
+                'response_keys' => array_keys($response),
+            ]);
+
+            throw new BadGatewayHttpException('Login QR code response is incomplete.');
+        }
 
         $this->logger->info('Login QR code generated', [
             'route' => 'instance_login',
@@ -289,7 +299,11 @@ class LoginService
             'action' => $action,
         ]);
 
-        return new JsonResponse(['message' => 'Unsuccess authentication.']);
+        $message = $action === 'registration'
+            ? 'Registration timed out. Please try again.'
+            : 'Authentication timed out. Please try again.';
+
+        return new JsonResponse(['message' => $message]);
     }
 
     private function createJwtCookie(string $token): Cookie
@@ -322,8 +336,15 @@ class LoginService
         if ($request->query->has('userPublicId')) {
             $userPublicId = $request->query->get('userPublicId');
 
+            // Debug log for raw userPublicId
+            $this->logger->info('userPublicId_raw', [
+                'route' => 'instance_login',
+                'userPublicId' => $userPublicId,
+                'userPublicId_length' => strlen($userPublicId),
+            ]);
+
             if ($userPublicId === null) {
-                $this->logger->warning('Missing userPublicId value on login request', [
+                $this->logger->error('Missing userPublicId value on login request', [
                     'route' => 'instance_login',
                     'exception' => BadRequestHttpException::class,
                 ]);
@@ -331,8 +352,8 @@ class LoginService
                 throw new BadRequestHttpException('Missing userPublicId value.');
             }
 
-            if (strlen($userPublicId) !== 48) {
-                $this->logger->warning('Invalid userPublicId length on login request', [
+            if (strlen($userPublicId) < 42 || strlen($userPublicId) > 50) {
+                $this->logger->error('Invalid userPublicId length on login request', [
                     'route' => 'instance_login',
                     'user_public_id_length' => strlen($userPublicId),
                     'exception' => \InvalidArgumentException::class,
@@ -341,8 +362,8 @@ class LoginService
                 throw new \InvalidArgumentException('Invalid length.');
             }
 
-            if (!preg_match('/^[A-Za-z0-9+\/]+={0,2}$/', $userPublicId)) {
-                $this->logger->warning('Invalid userPublicId characters on login request', [
+            if (!preg_match('/^[A-Za-z0-9+\/ ]+={0,2}$/', $userPublicId)) {
+                $this->logger->error('Invalid userPublicId characters on login request', [
                     'route' => 'instance_login',
                     'exception' => \InvalidArgumentException::class,
                 ]);
@@ -352,8 +373,8 @@ class LoginService
 
             $decoded = base64_decode($userPublicId, true);
 
-            if ($decoded === false || strlen($decoded) !== 35) {
-                $this->logger->warning('Invalid userPublicId payload on login request', [
+            if ($decoded === false || strlen($decoded) < 32 || strlen($decoded) > 40) {
+                $this->logger->error('Invalid userPublicId payload on login request', [
                     'route' => 'instance_login',
                     'decoded_length' => $decoded === false ? null : strlen($decoded),
                     'exception' => \InvalidArgumentException::class,
@@ -371,8 +392,14 @@ class LoginService
     private function pollState(string $processId, string $action): array|\App\Entity\User
     {
         $startTime = time();
-        $maxWait = 10;
+        $maxWait = $this->userRepository->count([]) === 0 ? 30 : 10;
         $response = [];
+
+        $this->logger->info('Polling started for frontend state check', [
+            'process' => $processId,
+            'action' => $action,
+            'max_wait_seconds' => $maxWait,
+        ]);
 
         do {
             $user = $this->userRepository->findOneBy([
@@ -395,6 +422,9 @@ class LoginService
                     'process' => $processId,
                     'action' => $action,
                     'user_id' => method_exists($user, 'getId') ? $user->getId() : null,
+                    'user_email' => method_exists($user, 'getEmail') ? $user->getEmail() : null,
+                    'user_process' => method_exists($user, 'getProcess') ? $user->getProcess() : null,
+                    'user_allowed' => method_exists($user, 'isAllowed') ? $user->isAllowed() : null,
                 ]);
                 break;
             }
@@ -410,10 +440,21 @@ class LoginService
             }
 
             if ((time() - $startTime) >= $maxWait) {
+                $matchingUser = $this->userRepository->findOneBy([
+                    'process' => $processId,
+                ]);
+
                 $this->logger->warning('Polling timed out without matching user state', [
                     'process' => $processId,
                     'action' => $action,
                     'max_wait_seconds' => $maxWait,
+                    'matching_user_found' => $matchingUser !== null,
+                    'matching_user_id' => $matchingUser !== null && method_exists($matchingUser, 'getId') ? $matchingUser->getId() : null,
+                    'matching_user_email' => $matchingUser !== null && method_exists($matchingUser, 'getEmail') ? $matchingUser->getEmail() : null,
+                    'matching_user_process' => $matchingUser !== null && method_exists($matchingUser, 'getProcess') ? $matchingUser->getProcess() : null,
+                    'matching_user_allowed' => $matchingUser !== null && method_exists($matchingUser, 'isAllowed') ? $matchingUser->isAllowed() : null,
+                    'registration_rejected' => $action === 'registration' ? $this->isRegistrationRejected($processId) : null,
+                    'login_rejected' => $action === 'login' ? $this->isLoginRejected($processId) : null,
                 ]);
                 break;
             }

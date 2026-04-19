@@ -34,6 +34,19 @@ class BackendForwared
 
             $body = $request->getContent();
 
+            $logger->info('Forward request received', [
+                'process' => $process,
+                'request_id' => $requestId,
+                'route' => $request->attributes->get('_route'),
+                'method' => $request->getMethod(),
+                'content_length' => strlen($body),
+                'remote_addr' => $request->getClientIp(),
+                'user_agent' => $request->headers->get('User-Agent'),
+                'has_extension_auth' => $request->headers->has('X-Extension-Auth'),
+                'origin' => $request->headers->get('Origin'),
+                'referer' => $request->headers->get('Referer'),
+            ]);
+
             if (empty($body)) {
                 $logger->info('Empty request body', [
                     'process' => $process,
@@ -64,6 +77,10 @@ class BackendForwared
 
             try {
                 $response = $service->forwardRegistration($payload);
+                    $logger->info('POLL : Forward registration response', [
+                        'process' => $process,
+                        'response' => $response->getContent(false)
+                    ]);
             } catch (\Throwable $e) {
                 $logger->error('Backend transport failure', [
                     'process' => $process,

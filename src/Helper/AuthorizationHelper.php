@@ -88,6 +88,30 @@ final class AuthorizationHelper
      */
     public function controllAuthorizationHeader($data, $response): array
     {
+        if (!is_object($data)) {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Invalid response payload type',
+                'payload_type' => get_debug_type($data),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Invalid response payload type'
+            ];
+        }
+
+        if (!property_exists($data, 'corporateIdentity') || !is_string($data->corporateIdentity) || $data->corporateIdentity === '') {
+            $this->logger->error('Control authorization header failed', [
+                'error' => 'Missing corporateIdentity in response payload',
+                'payload_keys' => array_keys(get_object_vars($data)),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Missing corporateIdentity in response payload'
+            ];
+        }
+
         $encryptedData = $data->corporateIdentity;
         $decodedJsonData = json_decode($response->getContent(), true);
         if (!isset($decodedJsonData['iv'])) {
@@ -180,16 +204,36 @@ final class AuthorizationHelper
     {
         $header = $this->getRequestHeader($authorization, $forwardedAuthHeader);
         $payload = $this->getRequestPayload($encryptedData);
+        $requestStartedAt = microtime(true);
+
+        $this->logger->info('Outbound HTTP request started', [
+            'target' => $target,
+            'has_forwarded_extension_auth' => $forwardedAuthHeader !== null,
+        ]);
 
         try {
             $response = $this->client->request('POST', $target, [
                 'headers' => $header,
                 'body' => json_encode($payload, \JSON_THROW_ON_ERROR)
             ]);
-            
-            return $this->handleResponse($response);
+
+            $handledResponse = $this->handleResponse($response);
+
+            $this->logger->info('Outbound HTTP request finished', [
+                'target' => $target,
+                'status' => $handledResponse->getStatusCode(),
+                'duration_ms' => round((microtime(true) - $requestStartedAt) * 1000, 2),
+            ]);
+
+            return $handledResponse;
 
         } catch (\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface $e) {
+            $this->logger->warning('Outbound HTTP request failed with client exception', [
+                'target' => $target,
+                'duration_ms' => round((microtime(true) - $requestStartedAt) * 1000, 2),
+                'error' => $e->getMessage(),
+            ]);
+
             return new JsonResponse([
                 'error' => 'Request failed',
                 'status' => 403,

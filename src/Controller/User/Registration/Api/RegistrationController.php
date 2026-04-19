@@ -64,7 +64,21 @@ class RegistrationController extends AbstractController
     {
         try {
             $response = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->logger->info('Registration callback payload received', [
+                'payload_keys' => array_keys($response),
+                'registration_process_id' => $response['registrationProcessId'] ?? null,
+                'process_id' => $response['processId'] ?? null,
+                'email' => $response['email'] ?? null,
+                'public_id' => $response['publicId'] ?? null,
+            ]);
+
             $dto = RegistrationProcessDTO::mapFromArrayRegistration($response);
+
+            $this->logger->info('Registration callback DTO mapped', [
+                'email' => $dto->getEmail(),
+                'public_id' => $dto->getPublicId(),
+                'process_id' => $dto->getProcessId(),
+            ]);
 
             if (!$this->userService->createUser($dto)) {
                 $this->logger->warning('Registration callback rejected', [
@@ -83,8 +97,7 @@ class RegistrationController extends AbstractController
                 'email' => $dto->getEmail(),
                 'public_id' => $dto->getPublicId(),
                 'process_id' => $dto->getProcessId(),
-            ]);
-            // and create process !!! to check from frontend
+            ]);            
 
             return new JsonResponse(['status' => 'success', 'data' => 'callback success'], Response::HTTP_OK);
         } catch (\JsonException $e) {

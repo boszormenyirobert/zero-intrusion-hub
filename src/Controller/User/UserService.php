@@ -141,6 +141,12 @@ class UserService
      */
     public function createUser(RegistrationProcessDTO $process): bool
     {
+        $this->logger->info('Starting user creation from registration callback', [
+            'email' => $process->getEmail(),
+            'public_id' => $process->getPublicId(),
+            'process_id' => $process->getProcessId(),
+        ]);
+
         if ($this->sslValidation($process) !== 1) {
             return $this->logVerificationError();
         }
@@ -171,6 +177,18 @@ class UserService
         );
 
         if ($existingUser !== null) {
+            if ($existingUser->getProcess() === $process->getProcessId()) {
+                $this->logger->info('Duplicate registration callback ignored because user already exists for process', [
+                    'email' => $process->getEmail(),
+                    'public_id' => $process->getPublicId(),
+                    'process_id' => $process->getProcessId(),
+                    'existing_user_id' => $existingUser->getId(),
+                    'existing_user_allowed' => $existingUser->isAllowed(),
+                ]);
+
+                return true;
+            }
+
             $this->markProcessRejected($process->getProcessId(), 'registration_rejected_duplicate_user');
 
             $this->logger->warning('User registration rejected because email and publicId already exist', [
@@ -187,14 +205,17 @@ class UserService
         $user->setEmail($process->getEmail());
         $user->setProcess($process->getProcessId());
         $user->setPublicId($process->getPublicId());
+        $user->setAllowed(true);
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
         $this->logger->info('User created from registration callback', [
+            'user_id' => $user->getId(),
             'email' => $user->getEmail(),
             'public_id' => $user->getPublicId(),
             'process_id' => $user->getProcess(),
+            'allowed' => $user->isAllowed(),
         ]);
 
         return true;
