@@ -2,182 +2,173 @@
 
 namespace App\Service\User\Login\HUB;
 
-use App\Controller\User\UserService;
+use App\DTO\LoginRequestDTO;
+use App\DTO\LoginViewDataDTO;
+use App\DTO\PollRequestDTO;
+use App\DTO\RejectedProcessStateDTO;
+use App\Entity\User;
+use App\Logger\LogTrace;
 use App\Repository\ProcessRepository;
 use App\Repository\UserRepository;
 use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
+use App\Service\JWT\JwtService;
+use App\Service\Shared\ProcessKey;
+use App\Service\User\UserQrCodeService;
 use Doctrine\ORM\EntityManagerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\HttpKernel\Exception\BadGatewayHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class LoginService
 {
+    private const ACTION_LOGIN = 'login';
+    private const ACTION_REGISTRATION = 'registration';
+    private const MAX_WAIT_SECONDS_FIRST_USER = 30;
+    private const MAX_WAIT_SECONDS_DEFAULT = 10;
+    private const ROUTE_INSTANCE_LOGIN = 'instance_login';
+    private const ROUTE_INSTANCE_LOGOUT = 'instance_logout';
+    private const ROUTE_USER_LOGIN_CHECK = 'user_login_check_hub';
+
     public function __construct(
         private LoggerInterface $logger,
-        private UserService $userService,
+        private UserQrCodeService $userQrCodeService,
         private ProcessRepository $processRepository,
         private UserRepository $userRepository,
         private RegistrationMenuAvailabilityService $registrationMenuAvailabilityService,
+        private JwtService $jwtService,
         private EntityManagerInterface $entityManager
-    ) {}
+    ) {
+    }
 
-    public function buildLoginViewData(Request $request): array
+    public function buildLoginViewData(Request $request): LoginViewDataDTO
     {
         $availabilities = $this->registrationMenuAvailabilityService->getAvailability($request);
 
         $this->logger->info('HUB login page requested', [
-            'route' => 'instance_login',
+            'route' => self::ROUTE_INSTANCE_LOGIN,
             'user_public_id_present' => $request->query->has('userPublicId'),
-            'allowUsersMenu' => $availabilities,
+            'allowUsersMenu' => $availabilities->toArray(),
         ]);
 
         $loginRequest = $this->resolveLoginRequest($request);
 
-        $response = $this->userService->getQrCode('user_login', [], $loginRequest['userPublicId']);
+        $response = $this->userQrCodeService->getQrCode(ProcessKey::USER_LOGIN, null, $loginRequest->userPublicId);
 
-        if (!isset($response['domainProcessId'], $response['qrCode'])) {
+        if (!$response->hasLoginFields()) {
             $this->logger->error('Login QR code response is missing required fields', [
-                'route' => 'instance_login',
-                'response_keys' => array_keys($response),
+                'route' => self::ROUTE_INSTANCE_LOGIN,
+                'response_keys' => array_keys($response->toArray()),
             ]);
 
-            throw new BadGatewayHttpException('Login QR code response is incomplete.');
+            throw new HttpException(502, 'Login QR code response is incomplete.');
         }
 
         $this->logger->info('Login QR code generated', [
-            'route' => 'instance_login',
-            'process' => 'user_login',
-            'domain_process_id' => $response['domainProcessId'] ?? null,
-            'user_public_id_present' => $loginRequest['userPublicId'] !== null,
+            'route' => self::ROUTE_INSTANCE_LOGIN,
+            'process' => ProcessKey::USER_LOGIN,
+            'domain_process_id' => $response->getDomainProcessId(),
+            'user_public_id_present' => $loginRequest->userPublicId !== null,
         ]);
 
-        return [
-            'processId' => $response['domainProcessId'],
-            'qrCodeData' => $response,
-            'qrCode' => $response['qrCode'],
-            'user' => [],
-            'action' => 'login',
-            'availabilities' => $availabilities
-        ];
+        return new LoginViewDataDTO(
+            (string) $response->getDomainProcessId(),
+            $response,
+            (string) $response->getQrCode(),
+            [],
+            self::ACTION_LOGIN,
+            $availabilities
+        );
     }
 
     public function buildFrontendPollResponse(
-        Request $request,
-        JWTTokenManagerInterface $jwtManager
+        Request $request
     ): JsonResponse {
         $pollRequest = $this->buildPollRequest($request);
 
         if ($pollRequest === null) {
-            return new JsonResponse([
-                'message' => 'Invalid poll request.',
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->createMessageResponse('Invalid poll request.', Response::HTTP_BAD_REQUEST);
         }
 
-        $user = $this->pollState($pollRequest['processId'], $pollRequest['action']);
+        $user = $this->pollState($pollRequest->processId, $pollRequest->action);
 
-        if ($this->isSuccessfulLogin($pollRequest['action'], $user)) {
+        if ($pollRequest->action === self::ACTION_LOGIN && $user instanceof User && $user->isAllowed()) {
             return $this->buildSuccessfulLoginResponse(
                 $user,
-                $jwtManager,
-                $pollRequest['processId'],
-                $pollRequest['action']
+                $pollRequest->processId,
+                $pollRequest->action
             );
         }
 
-        if ($this->isSuccessfulRegistration($pollRequest['action'], $user)) {
+        if ($pollRequest->action === self::ACTION_REGISTRATION && $user instanceof User) {
             return $this->buildSuccessfulRegistrationResponse(
                 $user,
-                $pollRequest['processId'],
-                $pollRequest['action']
+                $pollRequest->processId,
+                $pollRequest->action
             );
         }
 
-        if ($this->isRejectedRegistration($pollRequest['action'], $user)) {
+        if ($pollRequest->action === self::ACTION_REGISTRATION && $user instanceof RejectedProcessStateDTO) {
             return $this->buildRejectedRegistrationResponse(
-                $pollRequest['processId'],
-                $pollRequest['action'],
-                $user['reason'] ?? null
+                $pollRequest->processId,
+                $pollRequest->action,
+                $user->reason ?? null
             );
         }
 
-        if ($this->isRejectedLogin($pollRequest['action'], $user)) {
+        if ($pollRequest->action === self::ACTION_LOGIN && $user instanceof RejectedProcessStateDTO) {
             return $this->buildRejectedLoginResponse(
-                $pollRequest['processId'],
-                $pollRequest['action'],
-                $user['reason'] ?? null
+                $pollRequest->processId,
+                $pollRequest->action,
+                $user->reason ?? null
             );
         }
 
-        return $this->buildFailedPollResponse($pollRequest['processId'], $pollRequest['action']);
+        return $this->buildFailedPollResponse($pollRequest->processId, $pollRequest->action);
     }
 
     public function prepareLogoutResponse(Response $response, Request $request): void
     {
         $this->logger->info('User logout requested', [
-            'route' => 'instance_logout',
+            'route' => self::ROUTE_INSTANCE_LOGOUT,
             'host' => $request->getHost(),
-            'has_jwt_cookie' => $request->cookies->has('jwt_token'),
+            'has_jwt_cookie' => $request->cookies->has($this->jwtService->getCookieName()),
         ]);
 
-        $response->headers->clearCookie('jwt_token');
-        $response->headers->clearCookie('jwt_token', '/', null, false, true, null, 'Strict');
-
-        $host = $request->getHost();
-        if ($host !== '') {
-            $response->headers->clearCookie('jwt_token', '/', $host, false, true, null, 'Strict');
-        }
-
-        $response->headers->setCookie(new Cookie(
-            'jwt_token',
-            '',
-            time() - 3600,
-            '/',
-            null,
-            false,
-            true,
-            false,
-            'Strict'
-        ));
+        $this->jwtService->clearAuthenticationCookie($response, $request);
 
         $this->logger->info('User logout response prepared', [
-            'route' => 'instance_logout',
+            'route' => self::ROUTE_INSTANCE_LOGOUT,
             'host' => $request->getHost(),
         ]);
     }
 
-    private function buildPollRequest(Request $request): ?array
+    private function buildPollRequest(Request $request): ?PollRequestDTO
     {
-        $processId = $request->query->get('processId');
-        $action = $request->query->get('action');
+        $processId = $this->extractRequiredQueryString($request, 'processId');
+        $action = $this->extractRequiredQueryString($request, 'action');
 
-        if (!is_string($processId) || trim($processId) === '') {
+        if ($processId === null) {
             $this->logger->warning('Frontend login poll rejected due to missing processId', [
-                'route' => 'user_login_check',
+                'route' => self::ROUTE_USER_LOGIN_CHECK,
             ]);
 
             return null;
         }
 
-        if (!is_string($action)) {
+        if ($action === null) {
             $this->logger->warning('Frontend login poll rejected due to missing action', [
-                'route' => 'user_login_check',
+                'route' => self::ROUTE_USER_LOGIN_CHECK,
             ]);
 
             return null;
         }
 
-        $processId = trim($processId);
-        $action = trim($action);
-
-        if (!in_array($action, ['login', 'registration'], true)) {
+        if (!$this->isSupportedAction($action)) {
             $this->logger->warning('Frontend login poll rejected due to invalid action', [
-                'route' => 'user_login_check',
+                'route' => self::ROUTE_USER_LOGIN_CHECK,
                 'action' => $action,
             ]);
 
@@ -185,75 +176,48 @@ class LoginService
         }
 
         $this->logger->info('Frontend login poll started', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
         ]);
 
-        return [
-            'processId' => $processId,
-            'action' => $action,
-        ];
-    }
-
-    private function isSuccessfulLogin(string $action, mixed $user): bool
-    {
-        return $action === 'login' && $user && is_object($user) && $user->isAllowed();
-    }
-
-    private function isSuccessfulRegistration(string $action, mixed $user): bool
-    {
-        return $action === 'registration' && $user && is_object($user);
-    }
-
-    private function isRejectedRegistration(string $action, mixed $user): bool
-    {
-        return $action === 'registration' && is_array($user) && ($user['status'] ?? null) === 'rejected';
-    }
-
-    private function isRejectedLogin(string $action, mixed $user): bool
-    {
-        return $action === 'login' && is_array($user) && ($user['status'] ?? null) === 'rejected';
+        return new PollRequestDTO($processId, $action);
     }
 
     private function buildSuccessfulLoginResponse(
-        object $user,
-        JWTTokenManagerInterface $jwtManager,
+        User $user,
         string $processId,
         string $action
     ): JsonResponse {
-        $token = $jwtManager->create($user);
         $response = new JsonResponse([
             'message' => 'Authentication success.',
         ]);
 
-        $response->headers->setCookie($this->createJwtCookie($token));
+        $response->headers->setCookie($this->jwtService->createAuthenticationCookie($user));
         $this->resetUserLoginState($user);
         $this->logger->info('Frontend login poll succeeded', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
-            'user_id' => method_exists($user, 'getId') ? $user->getId() : null,
-            'user_email' => method_exists($user, 'getEmail') ? $user->getEmail() : null,
+            'user_id' => $user->getId(),
         ]);
 
         return $response;
     }
 
     private function buildSuccessfulRegistrationResponse(
-        object $user,
+        User $user,
         string $processId,
         string $action
     ): JsonResponse {
         $this->logger->info('Frontend registration poll succeeded', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
-            'user_id' => method_exists($user, 'getId') ? $user->getId() : null,
-            'user_email' => method_exists($user, 'getEmail') ? $user->getEmail() : null,
+            'user_id' => $user->getId(),
         ]);
 
-        return new JsonResponse(['message' => 'Registration success.']);
+        return $this->createMessageResponse('Registration success.');
     }
 
     private function buildRejectedRegistrationResponse(string $processId, string $action, ?string $reason): JsonResponse
@@ -265,13 +229,13 @@ class LoginService
         };
 
         $this->logger->warning('Frontend registration poll detected rejected registration', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
             'reason' => $reason,
         ]);
 
-        return new JsonResponse(['message' => $message]);
+        return $this->createMessageResponse($message);
     }
 
     private function buildRejectedLoginResponse(string $processId, string $action, ?string $reason): JsonResponse
@@ -282,20 +246,20 @@ class LoginService
         };
 
         $this->logger->warning('Frontend login poll detected rejected authentication', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
             'reason' => $reason,
         ]);
 
-        return new JsonResponse(['message' => $message]);
+        return $this->createMessageResponse($message);
     }
 
     private function buildFailedPollResponse(string $processId, string $action): JsonResponse
     {
         $this->logger->warning('Frontend login poll finished without successful authentication', [
-            'route' => 'user_login_check',
-            'process' => $processId,
+            'route' => self::ROUTE_USER_LOGIN_CHECK,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
         ]);
 
@@ -303,25 +267,10 @@ class LoginService
             ? 'Registration timed out. Please try again.'
             : 'Authentication timed out. Please try again.';
 
-        return new JsonResponse(['message' => $message]);
+        return $this->createMessageResponse($message);
     }
 
-    private function createJwtCookie(string $token): Cookie
-    {
-        return new Cookie(
-            'jwt_token',
-            $token,
-            time() + 3600,
-            '/',
-            null,
-            false,
-            true,
-            false,
-            'Strict'
-        );
-    }
-
-    private function resetUserLoginState(object $user): void
+    private function resetUserLoginState(User $user): void
     {
         $user->setAllowed(false);
         $user->setProcess(null);
@@ -329,132 +278,115 @@ class LoginService
         $this->entityManager->flush();
     }
 
-    private function resolveLoginRequest(Request $request): array
+    private function resolveLoginRequest(Request $request): LoginRequestDTO
     {
-        $userPublicId = null;
+        $userPublicId = $this->extractOptionalQueryString($request, 'userPublicId');
 
-        if ($request->query->has('userPublicId')) {
-            $userPublicId = $request->query->get('userPublicId');
-
-            // Debug log for raw userPublicId
-            $this->logger->info('userPublicId_raw', [
-                'route' => 'instance_login',
-                'userPublicId' => $userPublicId,
-                'userPublicId_length' => strlen($userPublicId),
-            ]);
-
-            if ($userPublicId === null) {
-                $this->logger->error('Missing userPublicId value on login request', [
-                    'route' => 'instance_login',
-                    'exception' => BadRequestHttpException::class,
-                ]);
-
-                throw new BadRequestHttpException('Missing userPublicId value.');
-            }
-
-            if (strlen($userPublicId) < 42 || strlen($userPublicId) > 50) {
-                $this->logger->error('Invalid userPublicId length on login request', [
-                    'route' => 'instance_login',
-                    'user_public_id_length' => strlen($userPublicId),
-                    'exception' => \InvalidArgumentException::class,
-                ]);
-
-                throw new \InvalidArgumentException('Invalid length.');
-            }
-
-            if (!preg_match('/^[A-Za-z0-9+\/ ]+={0,2}$/', $userPublicId)) {
-                $this->logger->error('Invalid userPublicId characters on login request', [
-                    'route' => 'instance_login',
-                    'exception' => \InvalidArgumentException::class,
-                ]);
-
-                throw new \InvalidArgumentException('Invalid characters.');
-            }
-
-            $decoded = base64_decode($userPublicId, true);
-
-            if ($decoded === false || strlen($decoded) < 32 || strlen($decoded) > 40) {
-                $this->logger->error('Invalid userPublicId payload on login request', [
-                    'route' => 'instance_login',
-                    'decoded_length' => $decoded === false ? null : strlen($decoded),
-                    'exception' => \InvalidArgumentException::class,
-                ]);
-
-                throw new \InvalidArgumentException('Invalid token.');
-            }
+        if ($userPublicId !== null) {
+            $this->assertValidUserPublicId($userPublicId);
         }
 
-        return [
-            'userPublicId' => $userPublicId,
-        ];
+        return new LoginRequestDTO($userPublicId);
     }
 
-    private function pollState(string $processId, string $action): array|\App\Entity\User
+    private function assertValidUserPublicId(string $userPublicId): void
+    {
+        $this->logger->info('userPublicId received on login request', [
+            'route' => self::ROUTE_INSTANCE_LOGIN,
+            'user_public_id_hash' => LogTrace::fingerprint($userPublicId),
+            'userPublicId_length' => strlen($userPublicId),
+        ]);
+
+        if (strlen($userPublicId) < 42 || strlen($userPublicId) > 50) {
+            $this->logger->error('Invalid userPublicId length on login request', [
+                'route' => self::ROUTE_INSTANCE_LOGIN,
+                'user_public_id_length' => strlen($userPublicId),
+                'exception' => \InvalidArgumentException::class,
+            ]);
+
+            throw new \InvalidArgumentException('Invalid length.');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9+\/ ]+={0,2}$/', $userPublicId)) {
+            $this->logger->error('Invalid userPublicId characters on login request', [
+                'route' => self::ROUTE_INSTANCE_LOGIN,
+                'exception' => \InvalidArgumentException::class,
+            ]);
+
+            throw new \InvalidArgumentException('Invalid characters.');
+        }
+
+        $decoded = base64_decode($userPublicId, true);
+
+        if ($decoded === false || strlen($decoded) < 32 || strlen($decoded) > 40) {
+            $this->logger->error('Invalid userPublicId payload on login request', [
+                'route' => self::ROUTE_INSTANCE_LOGIN,
+                'decoded_length' => $decoded === false ? null : strlen($decoded),
+                'exception' => \InvalidArgumentException::class,
+            ]);
+
+            throw new \InvalidArgumentException('Invalid token.');
+        }
+    }
+
+    private function pollState(string $processId, string $action): RejectedProcessStateDTO|\App\Entity\User|null
     {
         $startTime = time();
-        $maxWait = $this->userRepository->count([]) === 0 ? 30 : 10;
-        $response = [];
+        $maxWait = $this->resolveMaxWaitSeconds();
+        $response = null;
 
         $this->logger->info('Polling started for frontend state check', [
-            'process' => $processId,
+            'process_hash' => LogTrace::fingerprint($processId),
             'action' => $action,
             'max_wait_seconds' => $maxWait,
         ]);
 
         do {
-            $user = $this->userRepository->findOneBy([
-                'process' => $processId,
-            ]);
+            $user = $this->findUserByProcessId($processId);
 
-            if ($action === 'login' && $user && $user->isAllowed()) {
+            if ($action === self::ACTION_LOGIN && $user && $user->isAllowed()) {
                 $response = $user;
                 $this->logger->info('Polling found login-ready user', [
-                    'process' => $processId,
+                    'process_hash' => LogTrace::fingerprint($processId),
                     'action' => $action,
                     'user_id' => method_exists($user, 'getId') ? $user->getId() : null,
                 ]);
                 break;
             }
 
-            if ($action === 'registration' && $user) {
+            if ($action === self::ACTION_REGISTRATION && $user) {
                 $response = $user;
                 $this->logger->info('Polling found registration-ready user', [
-                    'process' => $processId,
+                    'process_hash' => LogTrace::fingerprint($processId),
                     'action' => $action,
                     'user_id' => method_exists($user, 'getId') ? $user->getId() : null,
-                    'user_email' => method_exists($user, 'getEmail') ? $user->getEmail() : null,
-                    'user_process' => method_exists($user, 'getProcess') ? $user->getProcess() : null,
                     'user_allowed' => method_exists($user, 'isAllowed') ? $user->isAllowed() : null,
                 ]);
                 break;
             }
 
-            if ($action === 'registration' && $this->isRegistrationRejected($processId)) {
+            if ($action === self::ACTION_REGISTRATION && $this->isRegistrationRejected($processId)) {
                 $response = $this->buildRejectedRegistrationState($processId);
                 break;
             }
 
-            if ($action === 'login' && $this->isLoginRejected($processId)) {
+            if ($action === self::ACTION_LOGIN && $this->isLoginRejected($processId)) {
                 $response = $this->buildRejectedLoginState($processId);
                 break;
             }
 
             if ((time() - $startTime) >= $maxWait) {
-                $matchingUser = $this->userRepository->findOneBy([
-                    'process' => $processId,
-                ]);
+                $matchingUser = $this->findUserByProcessId($processId);
 
                 $this->logger->warning('Polling timed out without matching user state', [
-                    'process' => $processId,
+                    'process_hash' => LogTrace::fingerprint($processId),
                     'action' => $action,
                     'max_wait_seconds' => $maxWait,
                     'matching_user_found' => $matchingUser !== null,
                     'matching_user_id' => $matchingUser !== null && method_exists($matchingUser, 'getId') ? $matchingUser->getId() : null,
-                    'matching_user_email' => $matchingUser !== null && method_exists($matchingUser, 'getEmail') ? $matchingUser->getEmail() : null,
-                    'matching_user_process' => $matchingUser !== null && method_exists($matchingUser, 'getProcess') ? $matchingUser->getProcess() : null,
                     'matching_user_allowed' => $matchingUser !== null && method_exists($matchingUser, 'isAllowed') ? $matchingUser->isAllowed() : null,
-                    'registration_rejected' => $action === 'registration' ? $this->isRegistrationRejected($processId) : null,
-                    'login_rejected' => $action === 'login' ? $this->isLoginRejected($processId) : null,
+                    'registration_rejected' => $action === self::ACTION_REGISTRATION ? $this->isRegistrationRejected($processId) : null,
+                    'login_rejected' => $action === self::ACTION_LOGIN ? $this->isLoginRejected($processId) : null,
                 ]);
                 break;
             }
@@ -475,41 +407,90 @@ class LoginService
         return $this->processRepository->findRejectedLoginProcess($processId) !== null;
     }
 
-    private function buildRejectedRegistrationState(string $processId): array
+    private function buildRejectedRegistrationState(string $processId): RejectedProcessStateDTO
     {
         $process = $this->processRepository->findRejectedRegistrationProcess($processId);
 
         if ($process === null) {
-            return [];
+            return new RejectedProcessStateDTO();
         }
 
         $this->logger->info('Detected rejected registration process during polling', [
-            'process' => $processId,
+            'process_hash' => LogTrace::fingerprint($processId),
             'reason' => $process->getAuthId(),
         ]);
 
-        return [
-            'status' => 'rejected',
-            'reason' => $process->getAuthId(),
-        ];
+        return new RejectedProcessStateDTO('rejected', $process->getAuthId());
     }
 
-    private function buildRejectedLoginState(string $processId): array
+    private function buildRejectedLoginState(string $processId): RejectedProcessStateDTO
     {
         $process = $this->processRepository->findRejectedLoginProcess($processId);
 
         if ($process === null) {
-            return [];
+            return new RejectedProcessStateDTO();
         }
 
         $this->logger->info('Detected rejected login process during polling', [
-            'process' => $processId,
+            'process_hash' => LogTrace::fingerprint($processId),
             'reason' => $process->getAuthId(),
         ]);
 
-        return [
-            'status' => 'rejected',
-            'reason' => $process->getAuthId(),
-        ];
+        return new RejectedProcessStateDTO('rejected', $process->getAuthId());
+    }
+
+    private function resolveMaxWaitSeconds(): int
+    {
+        return $this->userRepository->count([]) === 0
+            ? self::MAX_WAIT_SECONDS_FIRST_USER
+            : self::MAX_WAIT_SECONDS_DEFAULT;
+    }
+
+    private function findUserByProcessId(string $processId): ?\App\Entity\User
+    {
+        return $this->userRepository->findOneBy([
+            'process' => $processId,
+        ]);
+    }
+
+    private function extractRequiredQueryString(Request $request, string $key): ?string
+    {
+        $value = $request->query->get($key);
+
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return trim($value);
+    }
+
+    private function extractOptionalQueryString(Request $request, string $key): ?string
+    {
+        if (!$request->query->has($key)) {
+            return null;
+        }
+
+        $value = $request->query->get($key);
+
+        if (!is_string($value)) {
+            $this->logger->error('Missing userPublicId value on login request', [
+                'route' => self::ROUTE_INSTANCE_LOGIN,
+                'exception' => BadRequestHttpException::class,
+            ]);
+
+            throw new BadRequestHttpException('Missing userPublicId value.');
+        }
+
+        return $value;
+    }
+
+    private function isSupportedAction(string $action): bool
+    {
+        return in_array($action, [self::ACTION_LOGIN, self::ACTION_REGISTRATION], true);
+    }
+
+    private function createMessageResponse(string $message, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return new JsonResponse(['message' => $message], $status);
     }
 }

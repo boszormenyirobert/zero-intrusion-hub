@@ -2,11 +2,62 @@
 
 namespace App\EventListener;
 
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+
 class ValidationListenerHelper
 {
+    public static function decodeJsonRequest(RequestEvent $event, ?LoggerInterface $logger = null): ?array
+    {
+        try {
+            $decoded = json_decode(
+                $event->getRequest()->getContent(),
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        } catch (\JsonException $exception) {
+            $request = $event->getRequest();
+
+            $logger?->error('Request JSON decoding failed during input validation', [
+                'route' => $request->attributes->get('_route'),
+                'method' => $request->getMethod(),
+                'path' => $request->getPathInfo(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            $event->setResponse(new JsonResponse([
+                'error' => 'Invalid JSON payload.',
+            ], 400));
+
+            return null;
+        }
+
+        if (!is_array($decoded)) {
+            $event->setResponse(new JsonResponse([
+                'error' => 'Invalid JSON payload.',
+            ], 400));
+
+            return null;
+        }
+
+        return $decoded;
+    }
+
+    public static function validatePrefix(?string $value, string $expectedPrefix, string $field, array &$errors): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        if (!str_starts_with($value, $expectedPrefix)) {
+            $errors[$field] = sprintf('Invalid %s prefix.', $field);
+        }
+    }
 
     /**
-     * Validates the source field 
+     * Validates the source field
      * @param array $data
      * @param array &$errors
      */
@@ -31,7 +82,7 @@ class ValidationListenerHelper
             return;
         }
 
-        if(!$required && trim($data['domain']) === '') {
+        if (!$required && trim($data['domain']) === '') {
             return;
         }
 
@@ -67,7 +118,7 @@ class ValidationListenerHelper
             }
         }
     }
-    
+
     /**
      * Validates the userPublicId field (Base64: A-Za-z0-9+/=)
      * @param array $data
@@ -78,16 +129,14 @@ class ValidationListenerHelper
         $field = 'userPublicId';
         // userPublicId can be empty but must be present, so we only check for presence, not emptiness
         if ($field === 'userPublicId'  && trim($data['userPublicId']) == '') {
-            return;            
-        } else       
-
-        if (isset($data['userPublicId']) && is_string($data['userPublicId']) && trim($data['userPublicId']) !== '') {
+            return;
+        } elseif (isset($data['userPublicId']) && is_string($data['userPublicId']) && trim($data['userPublicId']) !== '') {
             // Allow standard and URL-safe base64 (A-Za-z0-9+/= and -_)
             if (!preg_match('/^[A-Za-z0-9+\/=\-_]+$/', $data['userPublicId'])) {
                 $errors['userPublicId'] = 'userPublicId contains invalid characters (allowed: A-Z, a-z, 0-9, +, /, =, -, _).';
             }
         }
-    }  
+    }
     /**
      * Validates the userPublicId field (Base64: A-Za-z0-9+/=)
      * @param array $data
@@ -95,12 +144,12 @@ class ValidationListenerHelper
      */
     public static function validateTargetId(array $data, array &$errors): void
     {
-        if (isset($data['targetId']) && is_string($data['targetId']) && trim($data['targetId']) !== '') {           
+        if (isset($data['targetId']) && is_string($data['targetId']) && trim($data['targetId']) !== '') {
             if (!preg_match('/^[A-Za-z0-9+\/=]+$/', $data['targetId'])) {
                 $errors['targetId'] = 'targetId contains invalid characters (allowed: A-Z, a-z, 0-9, +, /, =).';
             }
         }
-    }         
+    }
 
     public static function validateApplication(array $data, array &$errors): void
     {
@@ -119,7 +168,7 @@ class ValidationListenerHelper
             return;
         }
 
-        // binary control chars 
+        // binary control chars
         if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $desc)) {
             $errors['application'] = 'invalid control characters';
             return;
@@ -148,7 +197,7 @@ class ValidationListenerHelper
             return;
         }
 
-        // binary control chars 
+        // binary control chars
         if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $desc)) {
             $errors['description'] = 'invalid control characters';
             return;
@@ -183,8 +232,8 @@ class ValidationListenerHelper
                 $errors[$field] = ucfirst($field) . ' is required and must be a non-empty string.';
             }
         }
-    }    
-    
+    }
+
     /**
      * Validates the iv field: must be a valid base64 string and decode to exactly 16 bytes.
      * @param array $data
@@ -203,7 +252,7 @@ class ValidationListenerHelper
             $errors['iv'] = 'Invalid IV.';
         }
     }
-    
+
     /**
      * Validates the processId field: must be present, 22 chars, and base64-decode to 16 bytes.
      * @param array $data
@@ -241,15 +290,15 @@ class ValidationListenerHelper
         if (preg_match('/[\x00-\x1F\x7F]/', $email)) {
             $errors['email_chars'] = 'Invalid characters in email.';
             return;
-        }  
+        }
         if (mb_strlen($email) > 254) {
             $errors['email_length'] = 'Email too long.';
             return;
-        }  
+        }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email_format'] = 'Invalid email format.';
             return;
-        }             
+        }
     }
 
     public static function validateNoControlChars(array $data, array $fields, array &$errors): void
@@ -263,6 +312,6 @@ class ValidationListenerHelper
                 $errors[$field] = 'Contains invalid control characters';
             }
         }
-    }    
+    }
 
 }

@@ -1,0 +1,62 @@
+1. CI quality gate
+Legyen kötelező pipeline minden PR-re:
+
+tesztek
+static analysis
+coding standards
+build check
+Most ez a legnagyobb hiány.
+
+2. Static analysis
+Tegyél be pl.:
+
+PHPStan
+lehetőleg szigorúbb szinttel, fokozatosan emelve
+Ez enterprise környezetben alap.
+
+READY : 3. Code style gate: PHP CS Fixer vagy ECS
+
+4. Deployment hygiene
+A deploy legyen:
+
+kulcsalapú
+host verificationnel
+reprodukálható
+lehetőleg nem sima remote git pull
+5. Branch protection
+PR nélkül ne mehessen be semmi:
+
+required checks
+required review
+optional code owners
+
+
+6. Security automation
+Legalább alap szinten:
+
+dependency audit
+secret scanning
+composer/npm advisory check
+
+
+7. Coverage visibility
+Nem feltétlen kell rögtön coverage gate, de legyen:
+
+riport
+trend
+minimum elvárás a kritikus modulokra
+
+
+8. Environment consistency
+Legyen tiszta:
+
+local/dev/test/prod különbségek
+kötelező env-ek dokumentálása
+bootstrap reproducibility
+Rövid prioritás
+Ha csak 3 dolgot csinálnál:
+
+PR CI pipeline
+PHPStan + style check
+biztonságos deploy workflow
+Ez adná a legnagyobb enterprise ugrást.

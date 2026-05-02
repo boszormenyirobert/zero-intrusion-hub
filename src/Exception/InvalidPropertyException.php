@@ -2,4 +2,6 @@
 
 namespace App\Exception;
 
-class InvalidPropertyException extends \LogicException {}
+class InvalidPropertyException extends \LogicException
+{
+}

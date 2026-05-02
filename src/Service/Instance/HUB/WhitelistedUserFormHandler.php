@@ -2,7 +2,9 @@
 
 namespace App\Service\Instance\HUB;
 
+use App\DTO\WhitelistedUserInputDTO;
 use App\Entity\WhitelistedUsers;
+use App\Logger\LogTrace;
 use App\Repository\WhitelistedUsersRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -15,7 +17,8 @@ class WhitelistedUserFormHandler
         private EntityManagerInterface $entityManager,
         private WhitelistedUsersRepository $whitelistedUsersRepository,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     public function getAll(): array
     {
@@ -28,19 +31,24 @@ class WhitelistedUserFormHandler
             return false;
         }
 
+        /** @var WhitelistedUserInputDTO $formData */
+        $formData = $form->getData();
+
         $this->logger->info('Updating HUB instance registration state', [
             'route' => 'access',
-            'white_listed_user' => $form->getData(),
+            'email_hash' => LogTrace::fingerprint($formData->email),
+            'email_present' => trim($formData->email) !== '',
+            'active' => $formData->active,
         ]);
 
-        $email = trim((string) $form->get('email')->getData());
+        $email = trim($formData->email);
 
         if ($this->whitelistedUsersRepository->findOneByEmail($email) !== null) {
             $form->get('email')->addError(new FormError('This email address is already in the whitelist.'));
 
             $this->logger->warning('Whitelisted HUB user creation rejected because email already exists', [
                 'route' => 'access',
-                'email' => $email,
+                'email_hash' => LogTrace::fingerprint($email),
             ]);
 
             return false;
@@ -48,14 +56,14 @@ class WhitelistedUserFormHandler
 
         $user = new WhitelistedUsers();
         $user->setEmail($email);
-        $user->setActive($form->get('active')->getData());
+        $user->setActive($formData->active);
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
         $this->logger->info('Whitelisted HUB user created', [
             'route' => 'access',
-            'email' => $user->getEmail(),
+            'email_hash' => LogTrace::fingerprint($user->getEmail()),
             'active' => $user->isActive(),
         ]);
 
@@ -81,7 +89,7 @@ class WhitelistedUserFormHandler
         $this->logger->info('Whitelisted HUB user status updated', [
             'route' => 'access_user_status',
             'whitelisted_user_id' => $user->getId(),
-            'email' => $user->getEmail(),
+            'email_hash' => LogTrace::fingerprint($user->getEmail()),
             'active' => $user->isActive(),
         ]);
 
@@ -107,7 +115,7 @@ class WhitelistedUserFormHandler
         $this->logger->info('Whitelisted HUB user deleted', [
             'route' => 'access_user_delete',
             'whitelisted_user_id' => $id,
-            'email' => $user->getEmail(),
+            'email_hash' => LogTrace::fingerprint($user->getEmail()),
         ]);
 
         return true;

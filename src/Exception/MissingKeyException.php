@@ -2,4 +2,6 @@
 
 namespace App\Exception;
 
-class MissingKeyException extends \OutOfBoundsException {}
+class MissingKeyException extends \OutOfBoundsException
+{
+}

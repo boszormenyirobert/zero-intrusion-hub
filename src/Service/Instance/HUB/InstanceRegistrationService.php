@@ -14,10 +14,9 @@ class InstanceRegistrationService
         private InstanceSettingsRepository $instanceSettingsRepository,
         private EntityManagerInterface $entityManager
     ) {
-        $this->initializeInstanceSettings();
     }
 
-    private function initializeInstanceSettings(): bool
+    public function ensureInitialized(): bool
     {
         $instance = $this->instanceSettingsRepository->findCurrentSettings();
 
@@ -38,6 +37,8 @@ class InstanceRegistrationService
 
     public function getInitializationState(): bool
     {
+        $this->ensureInitialized();
+
         $instance = $this->instanceSettingsRepository->findCurrentSettings();
 
         if (empty($instance)) {

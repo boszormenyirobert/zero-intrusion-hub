@@ -1,4 +1,5 @@
 <?php
+
 /*
  * HUB instance
  * Task:
@@ -8,8 +9,13 @@
  * 2. External Domain-Instance Registration with 2 steps: request identity and finalize registration.
  *  - /instance-registration-external
  */
+
 namespace App\Controller\Instance\HUB;
 
+use App\Attribute\InitializationOnlyRoute;
+use App\Attribute\JwtRequired;
+use App\DTO\InstanceRegistrationFollowUpViewDataDTO;
+use App\DTO\InstanceRegistrationViewDataDTO;
 use App\Form\IdentityRequesterType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,85 +32,80 @@ class RegistrationController extends AbstractController
 {
     public function __construct(
         private InstanceRegistrationService $instanceRegistrationService
-    ) {}
+    ) {
+    }
 
     /*
-    * Home page for the HUB instance, shows the Instance Registration process if the .env variable 
+    * Home page for the HUB instance, shows the Instance Registration process if the .env variable
     * If JWT token is present in cookies, decodes it to check if it's valid and passes this info to the template.
     *
     * This is the first step of the Instance Registration process, where the user can request an identity for their HUB instance
     */
+    #[InitializationOnlyRoute('Available only while HUB initialization is active; denied after initialization is completed.')]
     #[Route('/instance-registration', name: 'instance_registration')]
     public function instanceRegistration(
         Request $request,
         InternalInstanceRegistrationHandler $internalInstanceRegistrationHandler,
         RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ): Response
-    {
+    ): Response {
         $formIdentity = $this->createForm(IdentityRequesterType::class);
         $formIdentity->handleRequest($request);
 
         $subscriptionData = $internalInstanceRegistrationHandler->handle($formIdentity, $request);
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
 
-        if ( $availabilities['availability_instance'] === false ) {
-            return $this->redirectToRoute('home');
-        }
+        $viewData = new InstanceRegistrationViewDataDTO(
+            $formIdentity->createView(),
+            $subscriptionData?->toArray(),
+            'instance_registration',
+            $availabilities
+        );
 
-        return $this->render('views/containers/container-instance-registration.html.twig', [
-            'form_identity_requester' => $formIdentity->createView(),
-            'service_auth_data' => $subscriptionData ?? null,
-            'path' => 'instance_registration',
-            'availabilities' => $availabilities    
-        ]);
-    }    
-    
+        return $this->render('views/containers/container-instance-registration.html.twig', $viewData->toArray());
+    }
+
     /*
     * Domaine-Instance registration process for external domain
     * The user get the identity for their Domaine-Instance and then can finalize the registration with the follow-up step.
     * The get: corporateIdKey, corporateIdSecret, iv, corporateId and sslPublicKey
-    * Through the form data: "domain, callback user login and callback user registration " the user can finalize the registration of 
+    * Through the form data: "domain, callback user login and callback user registration " the user can finalize the registration of
     * their domain instance in the follow-up step
     */
+    #[JwtRequired]
     #[Route('/instance-registration-external', name: 'instance_registration_external')]
     public function instanceRegistrationExternal(
         Request $request,
         ExternalInstanceRegistrationHandler $externalInstanceRegistrationHandler,
         RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ): Response
-    {
+    ): Response {
         $formIdentity = $this->createForm(IdentityRequesterType::class);
         $formIdentity->handleRequest($request);
 
-        if ($externalInstanceRegistrationHandler->handle($formIdentity, $request)) {
-            return $this->redirectToRoute('account');
-        }
+        $subscriptionData = $externalInstanceRegistrationHandler->handle($formIdentity, $request);
 
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
 
-        if ( $availabilities['availability_instance'] === false ) {
-            return $this->redirectToRoute('home');
-        }
-        
-        return $this->render('views/containers/container-instance-registration.html.twig', [
-            'form_identity_requester' => $formIdentity->createView(),
-            'service_auth_data' => null,
-            'path' => 'instance_registration_external',
-            'availabilities' => $availabilities
-        ]);
-    }        
+        $viewData = new InstanceRegistrationViewDataDTO(
+            $formIdentity->createView(),
+            $subscriptionData?->toArray(),
+            'instance_registration_external',
+            $availabilities
+        );
+
+        return $this->render('views/containers/container-instance-registration.html.twig', $viewData->toArray());
+    }
 
     /**
      * Follow-up step for the Instance Registration process, where the user can finalize their HUB instance registration.
      * This step is only accessible if the initial registration step has been completed.
      */
+    #[JwtRequired]
     #[Route('/instance-registration-follow-up', name: 'instance_registration_follow_up')]
     public function instanceRegistrationFollowUp(
         Request $request,
         InstanceRegistrationFollowUpHandler $instanceRegistrationFollowUpHandler,
         RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ): Response
-    {
+    ): Response {
         $formSystemRegistration = $this->createForm(CorporateType::class);
         $formSystemRegistration->handleRequest($request);
 
@@ -115,13 +116,11 @@ class RegistrationController extends AbstractController
 
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
 
-        if ( $availabilities['availability_instance'] === false ) {
-            return $this->redirectToRoute('home');
-        }
+        $viewData = new InstanceRegistrationFollowUpViewDataDTO(
+            $formSystemRegistration->createView(),
+            $availabilities
+        );
 
-        return $this->render('views/containers/container-subscription-final.html.twig', [
-            'form_identity_followup' =>  $formSystemRegistration->createView(),
-            'availabilities' => $availabilities
-          ]);
+        return $this->render('views/containers/container-subscription-final.html.twig', $viewData->toArray());
     }
 }

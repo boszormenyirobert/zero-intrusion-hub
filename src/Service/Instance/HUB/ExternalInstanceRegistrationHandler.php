@@ -2,8 +2,11 @@
 
 namespace App\Service\Instance\HUB;
 
+use App\DTO\BackendPayloadDTO;
+use App\Logger\LogTrace;
 use App\Service\Corporate\SubscriptionService;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
+use App\Service\JWT\JwtService;
+use App\Service\Shared\ProcessKey;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,36 +15,45 @@ class ExternalInstanceRegistrationHandler
 {
     public function __construct(
         private SubscriptionService $subscriptionService,
-        private JWTEncoderInterface $jwtEncoder,
+        private JwtService $jwtService,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
-    public function handle(FormInterface $formIdentity, Request $request): bool
+    public function handle(FormInterface $formIdentity, Request $request): ?BackendPayloadDTO
     {
         if (!$formIdentity->isSubmitted() || !$formIdentity->isValid()) {
-            return false;
+            return null;
         }
 
-        $process = 'getIdentity';
+        $process = ProcessKey::GET_IDENTITY;
         $businessModel = 'businessPro';
-        $jwtTokenEncoded = $request->cookies->get('jwt_token') ?? '';
+        $jwtToken = $this->jwtService->extractPayloadFromRequest($request);
 
         $this->logger->info('Starting external HUB instance registration', [
             'process' => $process,
             'business_model' => $businessModel,
-            'has_jwt_cookie' => $jwtTokenEncoded !== '',
+            'has_jwt_cookie' => $this->jwtService->extractTokenFromRequest($request) !== null,
         ]);
 
-        $jwtToken = $this->jwtEncoder->decode($jwtTokenEncoded);
+        if ($jwtToken === null || !isset($jwtToken['publicId'])) {
+            $this->logger->warning('External HUB instance registration denied because JWT payload is missing', [
+                'process' => $process,
+                'business_model' => $businessModel,
+            ]);
 
-        $this->subscriptionService->getSubscriptionData($process, $businessModel, 'external', $jwtToken['publicId']);
+            return null;
+        }
+
+        $subscriptionData = $this->subscriptionService->getSubscriptionData($process, $businessModel, 'external', $jwtToken['publicId']);
 
         $this->logger->info('External HUB instance registration identity received', [
             'process' => $process,
             'business_model' => $businessModel,
-            'public_id' => $jwtToken['publicId'] ?? null,
+            'public_id_hash' => isset($jwtToken['publicId']) && is_string($jwtToken['publicId']) ? LogTrace::fingerprint($jwtToken['publicId']) : null,
+            'response_keys' => $subscriptionData->keys(),
         ]);
 
-        return true;
+        return $subscriptionData;
     }
 }

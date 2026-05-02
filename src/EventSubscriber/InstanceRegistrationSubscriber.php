@@ -10,11 +10,10 @@ use Psr\Log\LoggerInterface;
 
 class InstanceRegistrationSubscriber implements EventSubscriberInterface
 {
-
-    public function __construct( 
-        private LoggerInterface $logger, 
-        private InstanceRegistrationService $service)
-    {
+    public function __construct(
+        private LoggerInterface $logger,
+        private InstanceRegistrationService $service
+    ) {
     }
 
     public function onKernelRequest(RequestEvent $event): void

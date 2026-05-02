@@ -2,12 +2,13 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
+    token_ttl: '%app.jwt_token_ttl%'
     token_extractors:
         # check token in a cookie
         authorization_header:
             enabled: false
-            prefix:  jwt_token
+            prefix:  '%app.jwt_cookie_name%'
             name:    Authorization
         cookie:
             enabled: true
-            name:    jwt_token
+            name:    '%app.jwt_cookie_name%'

@@ -1,10 +1,13 @@
 nelmio_cors:
     defaults:
-        allow_origin: ['*']
-        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-        allow_headers: ['*']
-        expose_headers: ['*']
+        origin_regex: true
+        allow_methods: ['POST', 'OPTIONS']
+        allow_headers: ['Content-Type']
+        expose_headers: []
         max_age: 3600
         allow_credentials: false
     paths:
-        '^/': ~
+        '^/api/credential-hub/':
+            allow_origin: ['%env(CORS_EXTENSION_ALLOW_ORIGIN)%']
+            allow_headers: ['Content-Type', 'X-Extension-Auth']
+            expose_headers: ['X-Auth']

@@ -3,14 +3,14 @@
 namespace App\EventListener;
 
 use App\Attribute\JwtRequired;
+use App\Logger\LogTrace;
+use App\Service\JWT\JwtService;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Psr\Log\LoggerInterface;
-
 
 /**
  * Event listener for JWT authentication on controller actions.
@@ -23,73 +23,51 @@ use Psr\Log\LoggerInterface;
 class JwtAuthListener
 {
     public function __construct(
-        private JWTEncoderInterface $jwtEncoder,
+        private JwtService $jwtService,
         private UrlGeneratorInterface $urlGenerator,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     public function __invoke(ControllerEvent $event): void
     {
         $controller = $event->getController();
 
         if (!is_array($controller)) {
-            return; 
+            return;
         }
 
         $method = new \ReflectionMethod($controller[0], $controller[1]);
         $attributes = $method->getAttributes(JwtRequired::class);
 
         if (empty($attributes)) {
-            return; 
+            return;
         }
 
         $request = $event->getRequest();
-        $jwtToken = $request->cookies->get('jwt_token') ?? '';
         $route = $request->attributes->get('_route');
 
-        $isValid = false;
+        $payload = $this->jwtService->extractPayloadFromRequest($request);
+        $isValid = $payload !== null;
 
-        try {
-            $payload = $this->jwtEncoder->decode($jwtToken);
+        $this->logger->info('Protected route JWT evaluated', [
+            'route' => $route,
+            'is_jwt_valid' => $isValid,
+            'username_hash' => isset($payload['username']) && is_string($payload['username']) ? LogTrace::fingerprint($payload['username']) : null,
+        ]);
 
-            $isValid = $payload !== false;
-
-            $this->logger->info('Protected route JWT evaluated', [
+        if (!$isValid) {
+            $this->logger->warning('Protected route denied because JWT is invalid', [
                 'route' => $route,
-                'is_jwt_valid' => $isValid,
-                'username' => is_array($payload) ? ($payload['username'] ?? null) : null,
             ]);
 
-            if (!$isValid && !empty($attributes)) {
-                $this->logger->warning('Protected route denied because JWT is invalid', [
-                    'route' => $route,
-                ]);
-
-                $event->setController(function () {
-                    return new RedirectResponse(
-                        $this->urlGenerator->generate('instance_login')
-                    );
-                });
-            }
-        } catch (\Exception $e) {
-            $this->logger->error('Protected route JWT decoding failed', [
-                'route' => $route,
-                'exception' => $e->getMessage(),
-            ]);
-
-            if (!empty($attributes)) {
-                $event->setController(function () {
-                    return new RedirectResponse(
-                        $this->urlGenerator->generate('instance_login')
-                    );
-                });
-            }
+            $event->setController(function () {
+                return new RedirectResponse(
+                    $this->urlGenerator->generate('instance_login')
+                );
+            });
         }
 
         $request->attributes->set('is_jwt_valid', $isValid);
     }
 }
-
-
-
-

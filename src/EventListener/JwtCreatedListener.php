@@ -18,7 +18,9 @@ use Psr\Log\LoggerInterface;
 )]
 class JwtCreatedListener
 {
-    public function __construct(private LoggerInterface $logger) {}
+    public function __construct(private LoggerInterface $logger)
+    {
+    }
 
     public function onJWTCreated(JWTCreatedEvent $event): void
     {

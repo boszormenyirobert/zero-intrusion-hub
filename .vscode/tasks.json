@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PHP CS Fixer: check",
+      "type": "shell",
+      "command": "composer",
+      "args": [
+        "cs:check"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "PHP CS Fixer: fix",
+      "type": "shell",
+      "command": "composer",
+      "args": [
+        "cs:fix"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

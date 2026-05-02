@@ -13,16 +13,15 @@ class AppExtension extends AbstractExtension implements GlobalsInterface
     public function __construct(
         private RequestStack $requestStack,
         private OwnClientRepository $ownClientRepository,
-        private JwtService $jwtService)
-    {       
+        private JwtService $jwtService
+    ) {
     }
 
     public function getGlobals(): array
     {
         $request = $this->requestStack->getCurrentRequest();
         $ownClient = $this->ownClientRepository->findAll();
-        $token = $request?->cookies->get('jwt_token');
-        $jwtPayload = $this->jwtService->jwtValidation($token);
+        $jwtPayload = $request !== null ? $this->jwtService->extractPayloadFromRequest($request) : null;
 
         return [
             'is_jwt_valid' => $jwtPayload !== null,

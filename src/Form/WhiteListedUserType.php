@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-
+use App\DTO\WhitelistedUserInputDTO;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -18,12 +18,12 @@ class WhiteListedUserType extends AbstractType
         $builder
             ->add('email', EmailType::class, [
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Email address is required.',
-                    ]),
-                    new Email([
-                        'message' => 'Please enter a valid email address.',
-                    ]),
+                    new NotBlank(
+                        message: 'Email address is required.',
+                    ),
+                    new Email(
+                        message: 'Please enter a valid email address.',
+                    ),
                 ],
                 'attr' => [
                     'autocomplete' => 'email',
@@ -41,6 +41,7 @@ class WhiteListedUserType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
+            'data_class' => WhitelistedUserInputDTO::class,
             'csrf_protection' => true
         ]);
     }

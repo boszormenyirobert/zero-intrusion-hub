@@ -4,6 +4,14 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.jwt_cookie_name: 'jwt_token'
+    app.jwt_token_ttl: 3600
+    app.jwt_clock_skew: 30
+    app.jwt_cookie_path: '/'
+    app.jwt_cookie_samesite: '%env(string:JWT_COOKIE_SAMESITE)%'
+    app.jwt_cookie_secure: '%env(bool:JWT_COOKIE_SECURE)%'
+    app.jwt_cookie_http_only: true
+    app.x_auth_timestamp_ttl: '%env(int:X_AUTH_TIMESTAMP_TTL)%'
     EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%env(EASYLOGIN_SERVICE_REGISTRATION_PARTNER)%'
     EASYLOGIN_SERVICE_IDENTITY: '%env(EASYLOGIN_SERVICE_IDENTITY)%'
     EASYLOGIN_SERVICE_REGISTRATION: '%env(EASYLOGIN_SERVICE_REGISTRATION)%'
@@ -39,6 +47,18 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $jwtCookieName: '%app.jwt_cookie_name%'
+            $jwtTokenTtl: '%app.jwt_token_ttl%'
+            $jwtClockSkew: '%app.jwt_clock_skew%'
+            $jwtCookiePath: '%app.jwt_cookie_path%'
+            $jwtCookieSameSite: '%app.jwt_cookie_samesite%'
+            $jwtCookieSecure: '%app.jwt_cookie_secure%'
+            $jwtCookieHttpOnly: '%app.jwt_cookie_http_only%'
+            $xAuthTimestampTtl: '%app.x_auth_timestamp_ttl%'
+            $zeroIntrusionDomain: '%ZERO_INTRUSION_DOMAIN%'
+            $service_api_secret: '%SERVICE_API_SECRET%'
+            $service_api_key: '%SERVICE_API_KEY%'
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
 
@@ -78,6 +98,13 @@ services:
         arguments:
             $requestStack: '@request_stack'
         tags: ['twig.extension']
+
+    App\Logger\RequestIdProcessor:
+        tags: ['monolog.processor']
+
+    App\Logger\SensitiveDataProcessor:
+        tags: ['monolog.processor']
+
     App\:
         resource: '../src/'
         exclude:

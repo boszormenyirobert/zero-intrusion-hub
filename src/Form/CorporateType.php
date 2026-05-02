@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-
+use App\DTO\CorporateDataDTO;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -13,7 +13,7 @@ class CorporateType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('domain', TextType::class)    
+            ->add('domain', TextType::class)
             ->add('callbackUserLogin', TextType::class)
             ->add('callbackUserRegistration', TextType::class)
             ->add('corporateId', TextType::class);
@@ -22,6 +22,7 @@ class CorporateType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
+            'data_class' => CorporateDataDTO::class,
             'csrf_protection' => true,
             'csrf_field_name' => '_token',
             'csrf_token_id'   => 'identity_requester',

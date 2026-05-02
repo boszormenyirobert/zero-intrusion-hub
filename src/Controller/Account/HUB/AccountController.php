@@ -1,22 +1,26 @@
 <?php
+
 /**
- * HUB VIEW: Fetches account data
+ * HUB view: fetches account data.
  */
+
 namespace App\Controller\Account\HUB;
 
+use App\Attribute\JwtRequired;
 use App\Service\Account\HUB\AccountService;
 use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Service\User\UserRegistrationService;
+use App\Service\User\BackendForwardingService;
 
 class AccountController extends AbstractController
 {
     public function __construct(
         private AccountService $accountService
-    ) {}
+    ) {
+    }
 
     /**
      * Handles authenticated account requests.
@@ -25,13 +29,13 @@ class AccountController extends AbstractController
      * Renders the account view with subscription and account info.
      * If JWT is invalid or user not found, redirects to login (used only once by HUB initialization).
      */
+    #[JwtRequired]
     #[Route('/account', name: 'account')]
     public function account(
         Request $request,
-        UserRegistrationService $userRegistrationService,
+        BackendForwardingService $backendForwardingService,
         RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ): Response 
-    { 
+    ): Response {
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
         $accountContext = $this->accountService->resolveAccountContext($request);
 
@@ -40,8 +44,8 @@ class AccountController extends AbstractController
         }
 
         $businessSubscription = $this->accountService->loadBusinessSubscription(
-            $userRegistrationService,
-            $accountContext['user']
+            $backendForwardingService,
+            $accountContext->user
         );
 
         return $this->render(
@@ -49,8 +53,8 @@ class AccountController extends AbstractController
             $this->accountService->buildAccountViewData(
                 $accountContext,
                 $businessSubscription,
-                $availabilities['availability_settings']
-            )
+                $availabilities->availabilitySettings
+            )->toArray()
         );
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Service\Device\Identity;
 
+use App\Logger\LogTrace;
 use App\Repository\InstanceSettingsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -12,7 +13,8 @@ class FirstSecretInstanceSettingsHandler
         private InstanceSettingsRepository $instanceSettingsRepository,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     public function handle(?string $registratorUserPublicId): void
     {
@@ -34,6 +36,7 @@ class FirstSecretInstanceSettingsHandler
         $this->logger->info('Stored registrator publicId in instance settings', [
             'handler' => self::class,
             'instance_settings_id' => $instanceSettings->getId(),
+            'registrator_public_id_hash' => LogTrace::fingerprint($registratorUserPublicId),
         ]);
     }
 }

@@ -1,7 +1,9 @@
 <?php
+
 /**
- * HUB VIEW: Fetches business subscription data from backend and decodes the response
+ * HUB view: fetches business subscription data from the backend and decodes the response.
  */
+
 namespace App\Controller\Business\HUB;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,7 +19,8 @@ class BusinessController extends AbstractController
 {
     public function __construct(
         private BusinessService $businessService,
-    ) {}
+    ) {
+    }
 
     /**
      * Handles authenticated business registration requests.
@@ -32,23 +35,24 @@ class BusinessController extends AbstractController
         Request $request,
         SubscriptionService $subscriptionService,
         RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ): Response 
-    {   
+    ): Response {
         $availabilities = $registrationMenuAvailabilityService->getAvailability($request);
         $businessContext = $this->businessService->resolveBusinessContext($request);
-        $forms = $this->businessService->buildForms($request);
 
         if ($businessContext === null) {
             return $this->render(
                 'views/corporate/business-services.html.twig',
                 $this->businessService->buildEmptyBusinessViewData(
-                    $availabilities['availability_settings']
-                )
+                    $availabilities->availabilitySettings
+                )->toArray()
             );
         }
 
+        $forms = $this->businessService->buildForms($request);
+
         $subscriptionData = $this->businessService->handleSubmittedForm(
             $forms,
+            $businessContext,
             $request,
             $subscriptionService
         );
@@ -63,8 +67,8 @@ class BusinessController extends AbstractController
                 $businessContext,
                 $forms,
                 null,
-                $availabilities['availability_settings']
-            )
+                $availabilities->availabilitySettings
+            )->toArray()
         );
     }
 }

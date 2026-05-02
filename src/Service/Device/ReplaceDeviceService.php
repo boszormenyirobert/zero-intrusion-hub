@@ -2,7 +2,9 @@
 
 namespace App\Service\Device;
 
-use App\Service\Corporate\AuthorizationControllService;
+use App\DTO\ReplaceDeviceResultDTO;
+use App\Service\Corporate\SecureRequestService;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service for handling device replacement registration and response validation.
@@ -11,48 +13,47 @@ use App\Service\Corporate\AuthorizationControllService;
  */
 class ReplaceDeviceService
 {
-
     public function __construct(
-        private AuthorizationControllService $authorizationControllService
-    ) {}
+        private SecureRequestService $secureRequestService,
+        private LoggerInterface $logger
+    ) {
+    }
 
     /**
-     * Forwards device registration data to the backend via AuthorizationControllService.
+     * Forwards device registration data to the backend via `SecureRequestService`.
      *
      * @param array $data Registration data to send
-     * @return array Backend response as array
+     * @return ReplaceDeviceResultDTO Backend response as DTO
      */
-    public function forwardRegistration(array $data): array
+    public function forwardRegistration(array $data): ReplaceDeviceResultDTO
     {
-        $response = $this->authorizationControllService->getSecurePostRequest(
+        $response = $this->secureRequestService->postSecure(
             $data
         );
 
         try {
-            return $response->toArray(true);
-        } catch (\Exception $e) {            
-            return [];
+            $decoded = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            return ReplaceDeviceResultDTO::fromArray(is_array($decoded) ? $decoded : []);
+        } catch (\Exception $e) {
+            $this->logger->error('Replace device backend response could not be decoded', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return new ReplaceDeviceResultDTO();
         }
     }
 
     /**
      * Validates the backend response for device replacement.
      *
-     * Checks if required keys (publicId, privateId, secret) exist in the response array.
+     * Checks whether the required fields are present in the backend response.
      *
-     * @param array $replaceDevice Backend response array
+     * @param ReplaceDeviceResultDTO $replaceDevice Backend response DTO
      * @return bool True if valid, false otherwise
      */
-    public function controllResponse(array $replaceDevice): bool
+    public function validateResponse(ReplaceDeviceResultDTO $replaceDevice): bool
     {
-        if (
-            array_key_exists('publicId', $replaceDevice) &&
-            array_key_exists('privateId', $replaceDevice) &&
-            array_key_exists('secret', $replaceDevice)
-        ) {
-            return true;
-        }
-
-        return false;
+        return $replaceDevice->isValid();
     }
 }

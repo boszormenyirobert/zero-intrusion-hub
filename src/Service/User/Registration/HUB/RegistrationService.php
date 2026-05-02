@@ -2,8 +2,11 @@
 
 namespace App\Service\User\Registration\HUB;
 
-use App\Controller\User\UserService;
+use App\DTO\QrCodeResponseDTO;
+use App\DTO\RegistrationViewDataDTO;
 use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
+use App\Service\Shared\ProcessKey;
+use App\Service\User\UserQrCodeService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -11,27 +14,27 @@ class RegistrationService
 {
     public function __construct(
         private LoggerInterface $logger,
-        private UserService $userService,
+        private UserQrCodeService $userQrCodeService,
         private RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ) {}
+    ) {
+    }
 
-    public function buildRegistrationViewData(Request $request): array
+    public function buildRegistrationViewData(Request $request): RegistrationViewDataDTO
     {
-        $response = $this->userService->getQrCode('user_registration', []);
+        $response = $this->userQrCodeService->getQrCode(ProcessKey::USER_REGISTRATION);
         $this->logger->info('Registration QR code generated', [
             'route' => $request->attributes->get('_route'),
-            'process' => 'user_registration',
-            'registration_process_id' => $response['registrationProcessId'] ?? null,
+            'process' => ProcessKey::USER_REGISTRATION,
+            'registration_process_id' => $response->getRegistrationProcessId(),
         ]);
 
         $availabilities = $this->registrationMenuAvailabilityService->getAvailability($request);
 
-        return [
-            'qrCode' => $response,
-            'menuItem_instanceRegistration' => true,
-            'processId' => $response['registrationProcessId'] ?? null,
-            'action' => 'registration',
-            'availabilities' => $availabilities
-        ];
+        return new RegistrationViewDataDTO(
+            $response,
+            true,
+            'registration',
+            $availabilities
+        );
     }
 }

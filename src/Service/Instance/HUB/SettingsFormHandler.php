@@ -2,6 +2,7 @@
 
 namespace App\Service\Instance\HUB;
 
+use App\DTO\InstanceSettingsInputDTO;
 use App\Repository\InstanceSettingsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
@@ -14,7 +15,8 @@ class SettingsFormHandler
         private InstanceSettingsRepository $instanceSettingsRepository,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     public function handle(FormInterface $form): bool
     {
@@ -24,7 +26,9 @@ class SettingsFormHandler
 
         $this->logger->info('Updating HUB instance registration state', [
             'route' => 'settings',
-            'instance_registration' => $form->get('initialization')->getData(),
+            'instance_registration' => ($form->getData() instanceof InstanceSettingsInputDTO)
+                ? $form->getData()->initialization
+                : $form->get('initialization')->getData(),
         ]);
 
         $instance = $this->instanceSettingsRepository->findCurrentSettings();
@@ -37,7 +41,9 @@ class SettingsFormHandler
             throw new LogicException('Instance settings not initialized.');
         }
 
-        $instance->setInitialization(!($form->get('initialization')->getData()));
+        /** @var InstanceSettingsInputDTO $data */
+        $data = $form->getData();
+        $instance->setInitialization(!$data->initialization);
 
         $this->entityManager->persist($instance);
         $this->entityManager->flush();

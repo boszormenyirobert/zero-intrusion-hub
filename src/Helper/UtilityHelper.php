@@ -8,7 +8,6 @@ namespace App\Helper;
  */
 final class UtilityHelper
 {
-
     public static function buildPath(string $domain, string $target, string $endpoint = ""): string
     {
         return rtrim($domain, '/') . '/' . trim($target, '/') . '/' . ltrim($endpoint, '/');

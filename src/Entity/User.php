@@ -18,7 +18,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $process = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true, unique: true)]
     private ?string $email = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -27,10 +27,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?bool $allowed = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $publicId = null;
-        
-    public function __construct(){}
+
+    public function __construct()
+    {
+    }
 
     public function getId(): ?int
     {
@@ -83,7 +85,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->allowed = $allowed;
 
         return $this;
-    }    
+    }
 
     public function getUserIdentifier(): string
     {
@@ -110,5 +112,5 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->publicId = $publicId;
 
         return $this;
-    }    
+    }
 }

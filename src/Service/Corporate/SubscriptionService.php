@@ -2,58 +2,52 @@
 
 namespace App\Service\Corporate;
 
-use App\Service\Corporate\AuthorizationControllService;
+use App\DTO\AuthorizedCorporateIdentityDTO;
+use App\DTO\BackendPayloadDTO;
+use App\DTO\CorporateDataDTO;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use App\Service\Corporate\DatabaseService;
-use App\Service\User\UserRegistrationService;
-use Symfony\Component\HttpFoundation\Response;
+use App\Service\Shared\ProcessKey;
 
 class SubscriptionService
 {
+    private const SUBSCRIPTION_SCOPE_INTERNAL = 'internal';
+
     public function __construct(
         private LoggerInterface $logger,
-        private AuthorizationControllService $authorizationControllService,
+        private SecureRequestService $secureRequestService,
         private RequestStack $requestStack,
-        private DatabaseService $databaseService,
-        private UserRegistrationService $userRegistrationService
-    ) {}
+        private DatabaseService $databaseService
+    ) {
+    }
 
 
     /**
      * Retrieves identifier data from API.
      *
-     * Authorization headers: SERVICE_API_KEY, SERVICE_API_SECRET  
+     * Authorization headers: SERVICE_API_KEY, SERVICE_API_SECRET
      * Encrypted using: DATA_HASH_SECRET
      */
-    public function getSubscriptionData($process = "getIdentity", $businessModel="businessPro", $type, $publicId)
+    public function getSubscriptionData(string $process, string $businessModel, string $type, string $publicId): BackendPayloadDTO
     {
-         $contentJson = json_encode(
-            [
-                'businessModel' => $businessModel,
-                'publicId' => $publicId,
-                'scope' => $type
-            ]);
-        /** @var Response $response */
-        $response = $this->userRegistrationService->forwardRegistration(
-            [
-                $process => $contentJson
-            ]
-        );
+        $authorizedData = $this->secureRequestService->postSecureAndDecode([
+            $process => $this->buildSubscriptionRequestPayload($businessModel, $type, $publicId),
+        ]);
 
-        $authorizedData = $this->authorizationControllService->controllAuthorization($response);
-        if($type == 'internal'){
-            $this->databaseService->createOwnClient($authorizedData);
+        if ($type === self::SUBSCRIPTION_SCOPE_INTERNAL) {
+            $this->databaseService->createOwnClient(AuthorizedCorporateIdentityDTO::fromArray($authorizedData));
         }
-        
-        return $authorizedData;
+
+        return BackendPayloadDTO::fromArray($authorizedData);
     }
 
-    public function updateOwnClient($userInputs){
+    public function updateOwnClient(CorporateDataDTO $userInputs)
+    {
         $this->databaseService->updateOwnClient($userInputs);
     }
 
-    public function getServiceAuthData(){
+    public function getServiceAuthData()
+    {
         $session = $this->requestStack->getSession();
         $authorizedData = $session->get('authorizedData');
         $session->remove('authorizedData');
@@ -61,16 +55,25 @@ class SubscriptionService
         return $authorizedData;
     }
 
-    public function finalizeSubscription(array $corporateData)
+    public function finalizeSubscription(CorporateDataDTO $corporateData)
     {
         $this->logger->info('Starting HUB instance registration finalization', [
-            'corporateDataKeys' => array_keys($corporateData),
+            'corporateDataKeys' => array_keys($corporateData->toArray()),
         ]);
-        $process = "updateIdentity";
-        $response = $this->authorizationControllService->getSecurePostRequest(
-            [$process => $corporateData]
+        $process = ProcessKey::UPDATE_IDENTITY;
+        $response = $this->secureRequestService->postSecure(
+            [$process => $corporateData->toArray()]
         );
 
         return $response;
+    }
+
+    private function buildSubscriptionRequestPayload(string $businessModel, string $type, string $publicId): string
+    {
+        return json_encode([
+            'businessModel' => $businessModel,
+            'publicId' => $publicId,
+            'scope' => $type,
+        ]);
     }
 }

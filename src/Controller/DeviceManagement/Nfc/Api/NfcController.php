@@ -4,55 +4,69 @@
  * Handles NFC-related API endpoints for device management.
  * - Provides Desktop Application endpoints to fetch all NFC users.
  * - Handles decryption of NFC card data and prepares it for QR code generation.
- * - Forwards requests to the backend via the ForwardingService (formerly UserRegistrationService).
+ * - Forwards requests to the backend via the dedicated backend forwarding service.
  * - Ensures request data integrity using client authentication headers (HMAC).
+ *
+ * Trust boundary note:
+ * - The HUB enforces route policy and header presence for `X-Client-Auth`.
+ * - Final cryptographic validation of client-auth HMAC material is performed exclusively by the upstream API.
  */
+
 namespace App\Controller\DeviceManagement\Nfc\Api;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Attribute\ClientAuthRequired;
+use App\Controller\Shared\AbstractBackendForwardingController;
+use App\Service\Security\ClientAuthRequestResolver;
+use App\Service\Shared\ProcessKey;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Controller\User\UserService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
-use App\Repository\UserRepository;
-use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use App\Service\User\UserRegistrationService;
-use App\Controller\CredentialHub\BackendForwared;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Service\User\BackendForwardingService;
 
-class NfcController extends AbstractController
+class NfcController extends AbstractBackendForwardingController
 {
     public function __construct(
         private LoggerInterface $logger,
-        private JWTEncoderInterface $jwtEncoder,
-        private UserService $userService,
-        private UserRepository $userRepository,
-    ) {}
+        private ?ClientAuthRequestResolver $clientAuthRequestResolver = null,
+    ) {
+    }
 
     /*
     * API endpoint used by the Desktop Application to fetch all NFC users.
     * The encrypted NFC data from the selected user will be written onto the NFC card by the Desktop Application.
     */
-    #[Route('/api/nfc/users', name: 'api_nfc_users', methods: "POST")]
+    #[ClientAuthRequired]
+    #[Route('/api/nfc/users', name: ProcessKey::API_NFC_USERS, methods: "POST")]
     public function getNfcUsers(
         Request $request,
-        UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
-        ) {
-        $hmac = $request->headers->get('x-client-auth');
+        BackendForwardingService $backendForwardingService
+    ): JsonResponse {
+        $hmac = ($this->clientAuthRequestResolver ??= new ClientAuthRequestResolver(new \App\Service\Security\ApiClientAuthGuard()))->resolveOrDeny($request);
 
-        return BackendForwared::forwardWithHmac($request, $userRegistrationService, $this->logger, "api_nfc_users", $hmac);        
+        if ($hmac instanceof JsonResponse) {
+            return $hmac;
+        }
+
+        return $this->forwardProcessWithHmac($request, $backendForwardingService, $this->logger, ProcessKey::API_NFC_USERS, $hmac);
     }
 
     /*
     * API endpoint used by the Desktop Application to decrypt NFC card data read from the card.
     * The decrypted NFC data will be generated as a QR code on the Desktop Application.
-    */  
-    #[Route('/api/nfc/decrypt', name: 'api_nfc_decrypt', methods: "POST")]
-    public function NfcDecryptCardData(
+    */
+    #[ClientAuthRequired]
+    #[Route('/api/nfc/decrypt', name: ProcessKey::API_NFC_DECRYPT, methods: "POST")]
+    public function decryptNfcCardData(
         Request $request,
-        UserRegistrationService $userRegistrationService // Rename the UserRegistrationService => ForwardingService
-        ) {
-        $hmac = $request->headers->get('x-client-auth');
+        BackendForwardingService $backendForwardingService
+    ): JsonResponse {
+        $hmac = ($this->clientAuthRequestResolver ??= new ClientAuthRequestResolver(new \App\Service\Security\ApiClientAuthGuard()))->resolveOrDeny($request);
 
-        return BackendForwared::forwardWithHmac($request, $userRegistrationService, $this->logger, "api_nfc_decrypt", $hmac);           
-    }    
+        if ($hmac instanceof JsonResponse) {
+            return $hmac;
+        }
+
+        return $this->forwardProcessWithHmac($request, $backendForwardingService, $this->logger, ProcessKey::API_NFC_DECRYPT, $hmac);
+    }
 }

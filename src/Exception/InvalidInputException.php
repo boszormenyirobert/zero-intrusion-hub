@@ -2,4 +2,6 @@
 
 namespace App\Exception;
 
-class InvalidInputException extends \InvalidArgumentException {}
+class InvalidInputException extends \InvalidArgumentException
+{
+}

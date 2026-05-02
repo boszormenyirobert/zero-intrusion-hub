@@ -2,6 +2,11 @@
 
 namespace App\Service\Instance\HUB;
 
+use App\DTO\InstanceHomeViewDataDTO;
+use App\DTO\InstanceSettingsViewDataDTO;
+use App\DTO\InstanceUsersViewDataDTO;
+use App\DTO\JwtContextDTO;
+use App\DTO\MenuAvailabilityDTO;
 use App\Service\Instance\HUB\JwtContextService;
 use App\Service\Instance\HUB\RegistrationMenuAvailabilityService;
 use Symfony\Component\Form\FormView;
@@ -12,51 +17,46 @@ class InstanceService
     public function __construct(
         private JwtContextService $jwtContextService,
         private RegistrationMenuAvailabilityService $registrationMenuAvailabilityService
-    ) {}
-
-    public function buildHomeViewData(Request $request): array
-    {
-        $jwtContext = $this->buildJwtContext($request);
-        $availiabilites = $this->registrationMenuAvailabilityService->getAvailability($request);
-
-        return [
-            'is_jwt_valid' => $jwtContext['isJwtValid'],
-            'user' => [
-                'userPublicId' => $jwtContext['userPublicId'],
-                'userEmail' => $jwtContext['userEmail'],
-            ],
-            'availabilities' => $availiabilites
-        ];
+    ) {
     }
 
-    public function buildSettingsViewData(Request $request, array $availiabilites, FormView $form): array
+    public function buildHomeViewData(Request $request): InstanceHomeViewDataDTO
     {
         $jwtContext = $this->buildJwtContext($request);
+        $availabilities = $this->registrationMenuAvailabilityService->getAvailability($request);
 
-        return [
-            'is_jwt_valid' => $jwtContext['isJwtValid'],
-            'user' => [
-                'userPublicId' => $jwtContext['userPublicId'],
-                'userEmail' => $jwtContext['userEmail'],
-            ],
-            'availabilities' => $availiabilites,
-            'form' => $form
-        ];
+        return new InstanceHomeViewDataDTO(
+            $jwtContext->isJwtValid,
+            $jwtContext->toUserDto(),
+            $availabilities
+        );
     }
 
-    public function buildUsersViewData(Request $request, array $availiabilites, FormView $form, array $whitelistedUsers): array
+    public function buildSettingsViewData(Request $request, MenuAvailabilityDTO $availabilities, FormView $form): InstanceSettingsViewDataDTO
     {
         $jwtContext = $this->buildJwtContext($request);
 
-        return [
-            'is_jwt_valid' => $jwtContext['isJwtValid'],
-            'availabilities' => $availiabilites,
-            'form' => $form,
-            'whitelistedUsers' => $whitelistedUsers,
-        ];
+        return new InstanceSettingsViewDataDTO(
+            $jwtContext->isJwtValid,
+            $jwtContext->toUserDto(),
+            $availabilities,
+            $form
+        );
     }
 
-    public function buildJwtContext(Request $request): array
+    public function buildUsersViewData(Request $request, MenuAvailabilityDTO $availabilities, FormView $form, array $whitelistedUsers): InstanceUsersViewDataDTO
+    {
+        $jwtContext = $this->buildJwtContext($request);
+
+        return new InstanceUsersViewDataDTO(
+            $jwtContext->isJwtValid,
+            $availabilities,
+            $form,
+            $whitelistedUsers,
+        );
+    }
+
+    public function buildJwtContext(Request $request): JwtContextDTO
     {
         return $this->jwtContextService->build($request);
     }
