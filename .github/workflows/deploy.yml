@@ -2,7 +2,7 @@ name: Deploy via SSH with password
 
 on:
   push:
-    branches: [ main-deactivated ]
+    branches: [ main ]
 
 jobs:
   deploy:
