@@ -315,18 +315,6 @@ class LoginService
 
             throw new \InvalidArgumentException('Invalid characters.');
         }
-
-        $decoded = base64_decode($userPublicId, true);
-
-        if ($decoded === false || strlen($decoded) < 32 || strlen($decoded) > 40) {
-            $this->logger->error('Invalid userPublicId payload on login request', [
-                'route' => self::ROUTE_INSTANCE_LOGIN,
-                'decoded_length' => $decoded === false ? null : strlen($decoded),
-                'exception' => \InvalidArgumentException::class,
-            ]);
-
-            throw new \InvalidArgumentException('Invalid token.');
-        }
     }
 
     private function pollState(string $processId, string $action): RejectedProcessStateDTO|\App\Entity\User|null

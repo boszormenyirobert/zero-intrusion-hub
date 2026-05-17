@@ -10,6 +10,8 @@ use App\Service\User\BackendForwardingService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use App\Service\CredentialHub\SharedSSE;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class BackendForwarder
 {
@@ -120,6 +122,13 @@ final class BackendForwarder
             $hmacHeader,
             false
         );
+    }
+
+    public static function forwardSSE(
+        string $key,
+        SharedSSE $sharedSSE
+    ): StreamedResponse {
+        return $sharedSSE->handle($key);
     }
 
     private static function forwardPayload(
@@ -282,7 +291,8 @@ final class BackendForwarder
                 'request_id' => $requestId,
             ]);
 
-            return self::jsonError(self::ERROR_MISSING_EXTENSION_AUTH, 401);
+            //    return self::jsonError(self::ERROR_MISSING_EXTENSION_AUTH, 401);
+            return null;
         }
 
         return null;

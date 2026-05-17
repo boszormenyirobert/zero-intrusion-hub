@@ -11,6 +11,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\BackendForwardingService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Service\CredentialHub\SharedSSE;
 
 /**
  * Domain read flow:
@@ -90,5 +92,13 @@ class DomainReadController extends AbstractBackendForwardingController
         Request $request
     ): JsonResponse {
         return $this->forwardProcessRequest($request, $backendForwardingService, $this->logger, ProcessKey::DOMAIN_READ_STATE);
+    }
+
+    #[Route('/approval-challange/{key}', methods: ['GET'])]
+    public function proxySse(
+        string $key,
+        SharedSSE $sharedSSE
+    ): StreamedResponse {
+        return $this->forwardProcessSSE($key, $sharedSSE);
     }
 }

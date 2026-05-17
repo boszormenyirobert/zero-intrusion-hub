@@ -43,7 +43,7 @@ class ExtensionAuthListener
                 'route' => $route,
             ]);
 
-            $event->setController(fn () => $this->extensionAuthGuard->createMissingHeaderResponse());
+            //     $event->setController(fn () => $this->extensionAuthGuard->createMissingHeaderResponse());
 
             return;
         }
