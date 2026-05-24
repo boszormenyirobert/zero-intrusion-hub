@@ -78,13 +78,13 @@ class InputDomainValidationListener
                 return;
             }
 
-            $requiredFields = ['domain', 'iv', 'processId', 'type'];
+            $requiredFields = ['domain', 'iv', 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateDomain($data, true, $errors);
             ValidationListenerHelper::validateIv($data, $errors);
-            ValidationListenerHelper::validateProcessId($data, $errors);
+            //    ValidationListenerHelper::validateProcessId($data, $errors);
             ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
 
             if (!empty($errors)) {
@@ -103,11 +103,11 @@ class InputDomainValidationListener
                 return;
             }
 
-            $requiredFields = ['processId', 'type'];
+            $requiredFields = [ 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
-            ValidationListenerHelper::validateProcessId($data, $errors);
+            //     ValidationListenerHelper::validateProcessId($data, $errors);
             ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
 
             if (!empty($errors)) {

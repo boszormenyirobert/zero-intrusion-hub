@@ -56,12 +56,12 @@ class InputOneTouchValidationListener
 
             $errors = [];
 
-            $requiredFields = ['iv', 'processId', 'type'];
+            $requiredFields = ['iv', 'type'];
 
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateIv($data, $errors);
-            ValidationListenerHelper::validateProcessId($data, $errors);
+            //    ValidationListenerHelper::validateProcessId($data, $errors);
             ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
 
             if (!empty($errors)) {

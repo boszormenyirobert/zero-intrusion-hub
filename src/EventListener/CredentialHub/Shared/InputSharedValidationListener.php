@@ -67,12 +67,12 @@ class InputSharedValidationListener
                 return;
             }
 
-            $requiredFields = ['processId', 'type'];
+            $requiredFields = [ 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
-            ValidationListenerHelper::validateProcessId($data, $errors);
+            //    ValidationListenerHelper::validateProcessId($data, $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([

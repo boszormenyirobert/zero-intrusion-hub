@@ -30,12 +30,12 @@ class InputVaultValidationListener
                 return;
             }
 
-            $requiredFields = ['domain', 'source', 'type', 'userPublicId'];
+            $requiredFields = ['domain', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
-            ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
-            ValidationListenerHelper::validateSource($data['type'] ?? '', 'applications', $errors);
+            //ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
+            //ValidationListenerHelper::validateSource($data['type'] ?? '', 'applications', $errors);
             ValidationListenerHelper::validateUserPublicId($data, $errors);
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
@@ -53,14 +53,14 @@ class InputVaultValidationListener
                 return;
             }
 
-            $requiredFields = ['domain', 'iv', 'processId', 'type'];
+            $requiredFields = ['domain', 'iv', 'type', 'process'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateDomain($data, false, $errors);
             ValidationListenerHelper::validateIv($data, $errors);
-            ValidationListenerHelper::validateProcessId($data, $errors);
-            ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
+            //    ValidationListenerHelper::validateProcessId($data, $errors);
+            //ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
@@ -79,16 +79,16 @@ class InputVaultValidationListener
             }
 
             $requiredFields = [
-                'application', 'description', 'source', 'targetId',
-                'type', 'userName', 'userPassword', 'userPublicId'];
+                'application', 'description', 'targetId',
+                'userName', 'userPassword', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
             ValidationListenerHelper::validateApplication($data, $errors);
             ValidationListenerHelper::validateDescription($data, $errors);
             ValidationListenerHelper::validateTargetId($data, $errors);
-            ValidationListenerHelper::validateSource($data['type'] ?? '', 'update-applications', $errors);
-            ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
+            //ValidationListenerHelper::validateSource($data['type'] ?? '', 'update-applications', $errors);
+            //ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
             ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
@@ -107,13 +107,13 @@ class InputVaultValidationListener
                 return;
             }
 
-            $requiredFields = ['source', 'targetId', 'type', 'userPublicId'];
+            $requiredFields = ['targetId', 'userPublicId'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
-            ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
+            //ValidationListenerHelper::validateSource($data['source'] ?? '', 'extension', $errors);
             ValidationListenerHelper::validateTargetId($data, $errors);
-            ValidationListenerHelper::validateSource($data['type'] ?? '', 'delete-applications', $errors);
+            //ValidationListenerHelper::validateSource($data['type'] ?? '', 'delete-applications', $errors);
             ValidationListenerHelper::validateUserPublicId($data, $errors);
 
             if (!empty($errors)) {
@@ -132,12 +132,12 @@ class InputVaultValidationListener
                 return;
             }
 
-            $requiredFields = ['processId', 'type'];
+            $requiredFields = [ 'type'];
             $errors = [];
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
 
-            ValidationListenerHelper::validateProcessId($data, $errors);
-            ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
+            //ValidationListenerHelper::validateProcessId($data, $errors);
+            //ValidationListenerHelper::validateSource($data['type'] ?? '', 'extension', $errors);
 
             if (!empty($errors)) {
                 $event->setResponse(new JsonResponse([
