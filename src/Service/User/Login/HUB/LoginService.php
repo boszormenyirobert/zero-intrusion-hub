@@ -63,7 +63,7 @@ class LoginService
                 'response_keys' => array_keys($response->toArray()),
             ]);
 
-            throw new HttpException(502, 'Login QR code response is incomplete.');
+        //    throw new HttpException(502, 'Login QR code response is incomplete.');
         }
 
         $this->logger->info('Login QR code generated', [
