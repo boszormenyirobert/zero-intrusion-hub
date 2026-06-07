@@ -54,6 +54,7 @@ final class BackendForwarder
         ProcessKey::SHARED_REGISTRATION_QR_IDENTITY => ['require_extension_auth' => false, 'decode_body' => false],
         ProcessKey::SHARED_REGISTRATION_NEW_TO_ENCRYPT => ['require_extension_auth' => true, 'decode_body' => false],
         ProcessKey::SHARED_REGISTRATION_NEW => ['require_extension_auth' => true, 'decode_body' => false],
+        ProcessKey::SHARED_REGISTRATION_NEW_SAVE => ['require_extension_auth' => true, 'decode_body' => false],
         ProcessKey::SHARED_REGISTRATION_STATE => ['require_extension_auth' => true, 'decode_body' => false],
         ProcessKey::ONE_TOUCH_QR_IDENTITY => ['require_extension_auth' => false, 'decode_body' => true],
         ProcessKey::ONE_TOUCH_IDENTIFIER => ['require_extension_auth' => true, 'decode_body' => true],

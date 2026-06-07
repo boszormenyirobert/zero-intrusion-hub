@@ -82,6 +82,7 @@ class ProcessRouteRegistry
             ProcessKey::SHARED_REGISTRATION_QR_IDENTITY => new BackendRouteDTO($base, RoutePath::QR_IDENTITY),
             ProcessKey::SHARED_REGISTRATION_NEW_TO_ENCRYPT => new BackendRouteDTO($base, RoutePath::TO_ENCRYPT),
             ProcessKey::SHARED_REGISTRATION_NEW => new BackendRouteDTO($base, RoutePath::NEW),
+            ProcessKey::SHARED_REGISTRATION_NEW_SAVE => new BackendRouteDTO($base, RoutePath::NEW_SAVE),
             ProcessKey::SHARED_REGISTRATION_STATE => new BackendRouteDTO($base, RoutePath::STATE),
         ];
     }

@@ -24,6 +24,7 @@ final class ProcessKey
     public const SHARED_REGISTRATION_QR_IDENTITY = 'shared_registration_qr_identity';
     public const SHARED_REGISTRATION_NEW_TO_ENCRYPT = 'shared_registration_new_to_encrypt';
     public const SHARED_REGISTRATION_NEW = 'shared_registration_new';
+    public const SHARED_REGISTRATION_NEW_SAVE = 'shared_registration_new_save';
     public const SHARED_REGISTRATION_STATE = 'shared_registration_state';
     public const USER_REGISTRATION = 'user_registration';
     public const USER_LOGIN = 'user_login';

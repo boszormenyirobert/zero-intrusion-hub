@@ -18,6 +18,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Service\User\BackendForwardingService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Service\CredentialHub\SharedSSE;
 
 #[Route('/api/credential-hub/shared/registration')]
 class RegistrationController extends AbstractBackendForwardingController
@@ -74,6 +76,15 @@ class RegistrationController extends AbstractBackendForwardingController
         return $this->forwardProcessRequest($request, $backendForwardingService, $this->logger, ProcessKey::SHARED_REGISTRATION_NEW);
     }
 
+    #[ExtensionAuthRequired('Shared-registration confirmation must include the X-Extension-Auth header established by the bootstrap step.')]
+    #[Route('/new/save', name: ProcessKey::SHARED_REGISTRATION_NEW_SAVE, methods: "POST")]
+    public function sharedRegistrationNewSave(
+        Request $request,
+        BackendForwardingService $backendForwardingService
+    ): JsonResponse {
+        return $this->forwardProcessRequest($request, $backendForwardingService, $this->logger, ProcessKey::SHARED_REGISTRATION_NEW_SAVE);
+    }
+
     /*
      * API endpoint for shared registration state polling (called by Browser-Extension).
      * Receives state request data and extension auth header, forwards to backend API.
@@ -87,4 +98,12 @@ class RegistrationController extends AbstractBackendForwardingController
     ): JsonResponse {
         return $this->forwardProcessRequest($request, $backendForwardingService, $this->logger, ProcessKey::SHARED_REGISTRATION_STATE);
     }
+
+    #[Route('/approval-challange/{key}', methods: ['GET'])]
+    public function proxySse(
+        string $key,
+        SharedSSE $sharedSSE
+    ): StreamedResponse {
+        return $this->forwardProcessSSE($key, $sharedSSE);
+    }    
 }

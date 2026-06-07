@@ -22,7 +22,7 @@ class InputSharedValidationListener
         $request = $event->getRequest();
         $path = $request->getPathInfo();
         $method = $request->getMethod();
-
+/**
         if ($path === '/api/credential-hub/shared/registration/qr-identity' && $method === 'POST') {
             $errors = [];
             $data = ValidationListenerHelper::decodeJsonRequest($event, $this->logger);
@@ -31,7 +31,7 @@ class InputSharedValidationListener
                 return;
             }
 
-            $requiredFields = ['description', 'isNew', 'source', 'type', 'userName', 'userPassword', 'userPublicId'];
+            $requiredFields = ['source', 'userPublicId'];
 
             ValidationListenerHelper::validateRequiredFields($data, $requiredFields, $errors);
             ValidationListenerHelper::validateDescription($data, $errors);
@@ -44,11 +44,9 @@ class InputSharedValidationListener
             if (array_key_exists('domain', $data)) {
                 ValidationListenerHelper::validateDomain($data, true, $errors);
                 ValidationListenerHelper::validateTargetId($data, $errors);
-                ValidationListenerHelper::validateSource($data['type'] ?? '', 'registration-domain', $errors);
             }
             if (array_key_exists('application', $data)) {
                 ValidationListenerHelper::validateApplication($data, $errors);
-                ValidationListenerHelper::validateSource($data['type'] ?? '', 'registration-application', $errors);
             }
 
             if (!empty($errors)) {
@@ -59,7 +57,7 @@ class InputSharedValidationListener
             }
             return;
         }
-
+ */
         if ($path === '/api/credential-hub/shared/registration/state'  && $method === 'POST') {
             $data = ValidationListenerHelper::decodeJsonRequest($event, $this->logger);
 

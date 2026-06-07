@@ -7,6 +7,7 @@ final class RoutePath
     public const QR_IDENTITY = '/qr-identity';
     public const TO_ENCRYPT = '/new/to-encrypt';
     public const NEW = '/new';
+    public const NEW_SAVE = '/new/save';
     public const STATE = '/state';
     public const CREDENTIAL = '/credential';
     public const CREDENTIAL_DECRYPTED = 'credential/decrypted';
