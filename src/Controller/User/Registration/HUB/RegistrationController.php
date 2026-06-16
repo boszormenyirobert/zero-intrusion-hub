@@ -16,6 +16,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Psr\Log\LoggerInterface;
+
 
 class RegistrationController extends AbstractController
 {
@@ -25,7 +27,7 @@ class RegistrationController extends AbstractController
      */
     #[PublicRoute('Public user registration page used to bootstrap the HUB browser registration flow.')]
     #[Route('/user-registration', name: 'user-registration', methods: "GET")]
-    public function userRegistration(Request $request, RegistrationService $registrationService): Response
+    public function userRegistration(Request $request, RegistrationService $registrationService, LoggerInterface $logger): Response
     {
         $viewData = $registrationService->buildRegistrationViewData($request);
 

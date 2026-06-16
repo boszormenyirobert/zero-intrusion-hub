@@ -12,6 +12,13 @@ parameters:
     app.jwt_cookie_secure: '%env(bool:JWT_COOKIE_SECURE)%'
     app.jwt_cookie_http_only: true
     app.x_auth_timestamp_ttl: '%env(int:X_AUTH_TIMESTAMP_TTL)%'
+    app.http_client_verify_peer: '%env(bool:HTTP_CLIENT_VERIFY_PEER)%'
+    app.http_client_verify_host: '%env(bool:HTTP_CLIENT_VERIFY_HOST)%'
+    app.http_client_ca_file: '%env(string:HTTP_CLIENT_CA_FILE)%'
+    app.http_client_ca_path: '%env(string:HTTP_CLIENT_CA_PATH)%'
+    app.http_client_local_cert: '%env(string:HTTP_CLIENT_LOCAL_CERT)%'
+    app.http_client_local_pk: '%env(string:HTTP_CLIENT_LOCAL_PK)%'
+    app.http_client_passphrase: '%env(string:HTTP_CLIENT_PASSPHRASE)%'
     EASYLOGIN_SERVICE_REGISTRATION_PARTNER: '%env(EASYLOGIN_SERVICE_REGISTRATION_PARTNER)%'
     EASYLOGIN_SERVICE_IDENTITY: '%env(EASYLOGIN_SERVICE_IDENTITY)%'
     EASYLOGIN_SERVICE_REGISTRATION: '%env(EASYLOGIN_SERVICE_REGISTRATION)%'
@@ -42,7 +49,19 @@ parameters:
     ZERO_INTRUSION_ACCOUNT: '%env(ZERO_INTRUSION_ACCOUNT)%'
 
 services:
-    Symfony\Contracts\HttpClient\HttpClientInterface: '@http_client'
+    app.http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['App\Http\HttpClientFactory', 'create']
+        arguments:
+            $verifyPeer: '%app.http_client_verify_peer%'
+            $verifyHost: '%app.http_client_verify_host%'
+            $caFile: '%app.http_client_ca_file%'
+            $caPath: '%app.http_client_ca_path%'
+            $localCert: '%app.http_client_local_cert%'
+            $localPk: '%app.http_client_local_pk%'
+            $passphrase: '%app.http_client_passphrase%'
+
+    Symfony\Contracts\HttpClient\HttpClientInterface: '@app.http_client'
     # default configuration for services in *this* file
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.

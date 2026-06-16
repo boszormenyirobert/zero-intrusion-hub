@@ -66,6 +66,10 @@ class LoginService
         //    throw new HttpException(502, 'Login QR code response is incomplete.');
         }
 
+        $this->logger->critical(json_encode([
+            'route' => self::ROUTE_INSTANCE_LOGIN,
+            '--------------------login_qr_code_response' => $response->toArray(),
+        ]));
         $this->logger->info('Login QR code generated', [
             'route' => self::ROUTE_INSTANCE_LOGIN,
             'process' => ProcessKey::USER_LOGIN,

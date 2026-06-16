@@ -167,6 +167,8 @@ final class AuthorizationHelper
                 'headers' => $header,
                 'body' => json_encode($payload, \JSON_THROW_ON_ERROR),
                 'timeout' => self::REQUEST_TIMEOUT_SECONDS,
+                'extra' => [
+                'trace_id' => uniqid('req_', true)]
             ]);
 
             $handledResponse = $this->handleResponse($response);

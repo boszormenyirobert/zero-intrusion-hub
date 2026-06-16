@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Service\CredentialHub;
 
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class SharedSSE
 {
-    public function __construct(private ParameterBagInterface $params)
-    {
+    public function __construct(
+        private ParameterBagInterface $params,
+        private HttpClientInterface $client
+    ) {
     }
 
     public function handle(string $key): StreamedResponse
@@ -23,13 +25,11 @@ class SharedSSE
 
             session_write_close();
 
-            $client = HttpClient::create();
-
-            $response = $client->request('GET', $url, [
+            $response = $this->client->request('GET', $url, [
                 'buffer' => false,
             ]);
 
-            foreach ($client->stream($response) as $chunk) {
+            foreach ($this->client->stream($response) as $chunk) {
 
                 echo $chunk->getContent();
 

@@ -24,7 +24,9 @@ class LoginApiRequestMapper
     public function mapCallbackRequest(Request $request): RegistrationProcessDTO
     {
         $decoded = $this->decodeRequestContent($request);
-
+        $this->logger->info('-----------------------------Received login callback with payload', [
+            'payload' => $decoded,
+        ]);
         if (!isset($decoded['signature'], $decoded['publicId'], $decoded['email'])) {
             throw new BadRequestHttpException('Invalid login callback payload.');
         }

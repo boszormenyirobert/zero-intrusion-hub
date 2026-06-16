@@ -57,7 +57,7 @@
         {% endif %}
 	</div>
 </header>
-
+{{ dump() }}
 {% if user is defined and user.userPublicId is defined and user.userEmail is defined %}
 	<script>	// Click and activate the one-touch-login
 
@@ -167,9 +167,9 @@
 </script>
 
 
-{% if processId is defined and processId %}
+{% if qrCodeData.sessionId is defined and qrCodeData.sessionId %}
 	<script>	// Auto polling for login/registration status
-		const pollUrl = "/login/check?processId={{ processId }}&action={{ action }}";
+		const pollUrl = "/login/check?processId={{ qrCodeData.sessionId }}&action={{ action }}";
 		const pollAction = "{{ action }}";
 		let pollAttempts = 0;
 		const maxPollAttempts = 10;

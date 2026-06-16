@@ -86,10 +86,10 @@ class SecureBackendClient
     {
         try {
             $decoded = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
-            $this->logger->info('Secure POST request response received', [
+            $this->logger->error('Secure POST request response received', [
                 'status' => $response->getStatusCode(),
                 'success' => $decoded[self::RESPONSE_KEY_SUCCESS] ?? 'No success field in response',
-                'userValidation' => $decoded[self::RESPONSE_KEY_VALIDATION] ?? 'No userValidation field in response',
+            //    'userValidation' => $decoded[self::RESPONSE_KEY_VALIDATION] ?? 'No userValidation field in response',
             ]);
         } catch (\JsonException $exception) {
             $this->logger->error('Error processing backend response', [

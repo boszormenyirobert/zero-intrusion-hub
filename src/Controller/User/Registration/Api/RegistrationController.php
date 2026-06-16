@@ -110,7 +110,7 @@ class RegistrationController extends AbstractController
                 ]);
 
                 return new JsonResponse([
-                    'status' => 'error',
+                    'state' => 'error',
                     'message' => 'Registration rejected.'
                 ], Response::HTTP_FORBIDDEN);
             }
@@ -121,14 +121,14 @@ class RegistrationController extends AbstractController
                 'process_hash' => LogTrace::fingerprint($dto->getProcessId()),
             ]);
 
-            return new JsonResponse(['status' => 'success', 'data' => 'callback success'], Response::HTTP_OK);
+            return new JsonResponse(['state' => 'success', 'data' => 'callback success'], Response::HTTP_OK);
         } catch (BadRequestHttpException $e) {
             $this->logger->error('Registration callback request handling failed', [
                 'error' => $e->getMessage(),
             ]);
 
             return new JsonResponse([
-                'status' => 'error',
+                'state' => 'error',
                 'message' => $e->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
@@ -137,7 +137,7 @@ class RegistrationController extends AbstractController
             ]);
 
             return new JsonResponse([
-                'status' => 'error',
+                'state' => 'error',
                 'message' => 'Internal Server Error'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
